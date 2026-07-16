@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@source "./packages/**/src/**/*.{rs,html,css}";
+
+body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-family);
+    margin: 20px;
+}

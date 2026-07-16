@@ -1,0 +1,15 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = { workspace = true, features = ["fullstack"] }
+serde = { workspace = true }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+kestrel-core = { workspace = true, optional = true }
+tokio = { version = "1", features = ["rt", "net", "time"], optional = true }
+
+[features]
+server = ["dioxus/server", "kestrel-core", "kestrel-core/scanner", "kestrel-core/fingerprint", "kestrel-core/database", "tokio"]

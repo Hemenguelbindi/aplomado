@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "packages/ui",
+    "packages/web",
+    "packages/desktop",
+    "packages/mobile",
+    "packages/api",
+    "packages/core",
+]
+
+[workspace.dependencies]
+dioxus = { version = "0.7.1" }
+serde = { version = "1", features = ["derive"] }
+
+# workspace
+ui = { path = "packages/ui" }
+api = { path = "packages/api" }
+kestrel-core = { path = "packages/core" }

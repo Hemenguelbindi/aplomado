@@ -1,0 +1,23 @@
+[package]
+name = "kestrel"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "kestrel"
+path = "src/main.rs"
+
+[dependencies]
+dioxus = { workspace = true, features = ["router"] }
+ui = { workspace = true }
+kestrel-core = { workspace = true, features = ["scanner", "fingerprint"] }
+api = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["rt", "net", "time", "rt-multi-thread"] }
+futures = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+
+[features]
+default = ["ui/scan-engine", "desktop"]
+desktop = ["dioxus/desktop"]
+server = ["dioxus/server", "ui/server"]

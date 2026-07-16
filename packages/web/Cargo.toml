@@ -1,0 +1,17 @@
+[package]
+name = "web"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = { workspace = true, features = ["router", "fullstack"] }
+ui = { workspace = true }
+api = { workspace = true }
+kestrel-core = { workspace = true }
+chrono = { version = "0.4", features = ["serde"] }
+serde_json = "1"
+
+[features]
+default = []
+web = ["dioxus/web"]
+server = ["dioxus/server", "ui/server"]

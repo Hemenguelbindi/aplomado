@@ -1,0 +1,17 @@
+[package]
+name = "mobile"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = { workspace = true, features = ["router", "fullstack"] }
+ui = { workspace = true }
+kestrel-core = { workspace = true, features = ["scanner", "fingerprint"] }
+futures = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1", features = ["rt", "net", "time"] }
+
+[features]
+default = ["ui/scan-engine"]
+mobile = ["dioxus/mobile"]
+server = ["dioxus/server", "ui/server"]

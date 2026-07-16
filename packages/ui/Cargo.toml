@@ -1,0 +1,20 @@
+[package]
+name = "ui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = { workspace = true }
+api = { workspace = true, optional = true }
+kestrel-core = { workspace = true }
+chrono = { version = "0.4", features = ["serde"] }
+petgraph = { version = "0.7", default-features = false, features = ["serde", "graphmap", "stable_graph"] }
+serde = { version = "1.0", features = ["derive"] }
+fastrand = "2.0"
+tokio = { version = "1", features = ["net", "time"], optional = true }
+futures = { version = "0.3", optional = true }
+
+[features]
+default = []
+server = ["api/server", "kestrel-core/scanner", "kestrel-core/fingerprint", "scan-engine"]
+scan-engine = ["kestrel-core/scanner", "kestrel-core/fingerprint", "tokio", "futures"]
