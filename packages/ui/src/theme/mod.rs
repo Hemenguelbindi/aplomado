@@ -121,6 +121,9 @@ impl Theme {
   --color-severity-medium: {severity_medium};
   --color-severity-low: {severity_low};
   --color-severity-unknown: {severity_unknown};
+  --color-foreground: {text_primary};
+  --color-muted-foreground: {text_muted};
+  --color-surface-muted: {surface};
   --font-family: {font_family};
   --font-family-mono: {font_family_mono};
   --text-xs: {text_xs};

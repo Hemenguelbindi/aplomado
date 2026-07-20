@@ -42,11 +42,43 @@ fn App() -> Element {
         let mut st = scan_status;
         use_effect(move || {
             spawn(async move {
-                if let Ok(sessions_json) = api::list_sessions().await {
-                    if let Some(last_json) = sessions_json.into_iter().next() {
-                        if let Ok(session) = serde_json::from_str::<Session>(&last_json) {
-                            sess.set(Some(session));
-                        }
+                if let Ok(sessions) = api::list_sessions().await {
+                    if let Some(sr) = sessions.into_iter().next() {
+                        use ui::models::{ScanPreset, TargetStatus};
+                        let session = Session {
+                            id: sr.id,
+                            name: sr.name,
+                            targets: sr
+                                .targets
+                                .into_iter()
+                                .map(|t| ui::models::ScanTargetItem {
+                                    id: t.id,
+                                    target: t.target,
+                                    preset: serde_json::from_str::<ScanPreset>(&format!(
+                                        "\"{}\"",
+                                        t.preset
+                                    ))
+                                    .unwrap_or(ScanPreset::Quick),
+                                    custom_ports: t.custom_ports,
+                                    status: match t.status.as_str() {
+                                        "Done" => TargetStatus::Done(t.hosts_count),
+                                        "Queued" => TargetStatus::Queued,
+                                        "Scanning" => TargetStatus::Scanning,
+                                        _ => TargetStatus::Queued,
+                                    },
+                                })
+                                .collect(),
+                            status: match sr.status.as_str() {
+                                "Idle" | "Done" => ui::models::SessionStatus::Done,
+                                "Scanning" => ui::models::SessionStatus::Scanning,
+                                _ => ui::models::SessionStatus::Idle,
+                            },
+                            created_at: sr.created_at,
+                            updated_at: sr.updated_at,
+                            hosts: sr.hosts,
+                            duration_secs: sr.duration_secs,
+                        };
+                        sess.set(Some(session));
                     }
                 }
                 if let Ok(Some(data)) = api::get_last_scan().await {

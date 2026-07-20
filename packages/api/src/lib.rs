@@ -2,6 +2,7 @@
 
 use aplomado_types::*;
 use dioxus::prelude::*;
+#[cfg(feature = "server")]
 use futures::stream::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
@@ -237,12 +238,23 @@ pub async fn save_session(data: String) -> Result<(), ServerFnError> {
     }
 }
 
+/// Target summary as returned by the session API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionTargetSummary {
+    pub id: String,
+    pub target: String,
+    pub preset: String,
+    pub custom_ports: Vec<u16>,
+    pub status: String,
+    pub hosts_count: u32,
+}
+
 /// Response type for session retrieval — avoids double-serialising `hosts_json`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionResponse {
     pub id: String,
     pub name: String,
-    pub targets: Vec<aplomado_core::database::SessionTargetData>,
+    pub targets: Vec<SessionTargetSummary>,
     pub status: String,
     pub created_at: String,
     pub updated_at: String,
@@ -250,13 +262,26 @@ pub struct SessionResponse {
     pub duration_secs: u64,
 }
 
+#[cfg(feature = "server")]
 impl From<aplomado_core::database::SessionData> for SessionResponse {
     fn from(s: aplomado_core::database::SessionData) -> Self {
         let hosts: Vec<HostInfo> = serde_json::from_str(&s.hosts_json).unwrap_or_default();
+        let targets = s
+            .targets
+            .into_iter()
+            .map(|t| SessionTargetSummary {
+                id: t.id,
+                target: t.target,
+                preset: t.preset,
+                custom_ports: t.custom_ports,
+                status: t.status,
+                hosts_count: t.hosts_count,
+            })
+            .collect();
         Self {
             id: s.id,
             name: s.name,
-            targets: s.targets,
+            targets,
             status: s.status,
             created_at: s.created_at,
             updated_at: s.updated_at,

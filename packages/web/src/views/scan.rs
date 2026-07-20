@@ -47,7 +47,7 @@ pub fn Scan() -> Element {
     rsx! {
         ScanView {
             session: session_for_view,
-            status: scan_status(),
+            status: status(),
             results: scan_results(),
             show_new_session: true,
             on_update_session: move |s: Session| {
@@ -57,7 +57,7 @@ pub fn Scan() -> Element {
             },
             on_start_scan: move |cfg: ScanConfigUi| {
                 let total_hosts = count_target_hosts(&cfg.targets);
-                scan_status.set(ScanStatusUi::Scanning { current: 0, total: total_hosts });
+                status.set(ScanStatusUi::Scanning { current: 0, total: total_hosts });
                 mark_targets_scanning(current_session);
                 let start_millis = chrono::Utc::now().timestamp_millis();
                 let targets_str = targets_to_strings(&cfg.targets);
@@ -67,22 +67,22 @@ pub fn Scan() -> Element {
                     match api::run_scan(api::ScanRequest { targets: targets_str.clone(), ports }).await {
                         Ok(hosts) => {
                             let duration = ((chrono::Utc::now().timestamp_millis() - start_millis) / 1000) as u64;
-                            handle_scan_success(scan_results, scan_status, history, current_session, hosts, targets_str, duration).await;
+                            handle_scan_success(scan_results, status, history, current_session, hosts, targets_str, duration).await;
                         }
-                        Err(e) => handle_scan_failure(scan_status, current_session, e.to_string()).await,
+                        Err(e) => handle_scan_failure(status, current_session, e.to_string()).await,
                     }
                 });
                 scan_task.set(Some(handle));
             },
             on_stop_scan: move |_| {
                 if let Some(task) = scan_task() { task.cancel(); }
-                scan_status.set(ScanStatusUi::Idle);
+                status.set(ScanStatusUi::Idle);
                 scan_task.set(None);
             },
             on_new_session: move |_| {
                 current_session.set(Some(create_default_session()));
                 scan_results.set(Vec::new());
-                scan_status.set(ScanStatusUi::Idle);
+                status.set(ScanStatusUi::Idle);
             },
         }
     }
