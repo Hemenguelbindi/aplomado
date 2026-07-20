@@ -41,6 +41,7 @@ pub async fn scan_host(ip: IpAddr, ports: &[u16]) -> Vec<PortInfo> {
                     service_version: None,
                     banner: None,
                     cpe: None,
+                    cves: vec![],
                 })
             } else {
                 None

@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "packages/types",
     "packages/ui",
     "packages/web",
     "packages/desktop",
@@ -12,8 +13,10 @@ members = [
 [workspace.dependencies]
 dioxus = { version = "0.7.1" }
 serde = { version = "1", features = ["derive"] }
+uuid = { version = "1", features = ["v4", "js"] }
 
 # workspace
 ui = { path = "packages/ui" }
 api = { path = "packages/api" }
-kestrel-core = { path = "packages/core" }
+peregrine-core = { path = "packages/core" }
+peregrine-types = { path = "packages/types" }

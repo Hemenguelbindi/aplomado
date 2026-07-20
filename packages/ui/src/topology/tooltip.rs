@@ -10,11 +10,10 @@ pub struct TopologyTooltipProps {
 
 #[component]
 pub fn TopologyTooltip(props: TopologyTooltipProps) -> Element {
-    if !props.visible || props.host.is_none() {
+    let Some(host) = props.host.as_ref().filter(|_| props.visible) else {
         return rsx! {};
-    }
+    };
 
-    let host = props.host.as_ref().unwrap();
     let ip = host.ip.to_string();
     let hostname = host.hostname.as_deref().unwrap_or("");
     let os_guess = host.os_guess.as_deref().unwrap_or("");

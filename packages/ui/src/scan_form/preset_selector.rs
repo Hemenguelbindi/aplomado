@@ -19,6 +19,7 @@ pub fn PresetSelector(props: PresetSelectorProps) -> Element {
     rsx! {
         div { class: "flex items-center gap-2 flex-wrap",
             span {
+                key: "preset-label",
                 class: "text-sm",
                 style: "color: var(--color-text-muted)",
                 "Пресет:"

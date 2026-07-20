@@ -94,9 +94,18 @@ async fn https_banner(host: &str, port: u16) -> Option<String> {
 
         ensure_crypto_provider();
 
+        // Use standard TLS verification with webpki roots.
+        // Security scanners have a tension: we want to read banners from
+        // arbitrary hosts (incl. self-signed / internal). The pragmatic
+        // approach: try strict verification first; if it fails the caller
+        // falls back to HTTP banner grabbing (see `grab_banner` port 443).
+        //
+        // `webpki-roots` bundles Mozilla's CA list so standard CA-signed
+        // certs verify correctly.
         let mut config = ClientConfig::builder()
-            .dangerous()
-            .with_custom_certificate_verifier(Arc::new(SkipVerifier))
+            .with_root_certificates(rustls::RootCertStore {
+                roots: webpki_roots::TLS_SERVER_ROOTS.into(),
+            })
             .with_no_client_auth();
 
         config.alpn_protocols = vec![b"http/1.1".into()];
@@ -176,42 +185,4 @@ async fn generic_banner(host: &str, port: u16) -> Option<String> {
     read_banner(&mut stream).await
 }
 
-#[cfg(feature = "rustls")]
-#[derive(Debug)]
-struct SkipVerifier;
-
-#[cfg(feature = "rustls")]
-impl rustls::client::danger::ServerCertVerifier for SkipVerifier {
-    fn verify_server_cert(
-        &self,
-        _end_entity: &rustls::pki_types::CertificateDer<'_>,
-        _intermediates: &[rustls::pki_types::CertificateDer<'_>],
-        _server_name: &rustls::pki_types::ServerName<'_>,
-        _ocsp_response: &[u8],
-        _now: rustls::pki_types::UnixTime,
-    ) -> Result<rustls::client::danger::ServerCertVerified, rustls::Error> {
-        Ok(rustls::client::danger::ServerCertVerified::assertion())
-    }
-
-    fn verify_tls12_signature(
-        &self,
-        _message: &[u8],
-        _cert: &rustls::pki_types::CertificateDer<'_>,
-        _dbsig: &rustls::DigitallySignedStruct,
-    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
-        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
-    }
-
-    fn verify_tls13_signature(
-        &self,
-        _message: &[u8],
-        _cert: &rustls::pki_types::CertificateDer<'_>,
-        _dbsig: &rustls::DigitallySignedStruct,
-    ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
-        Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
-    }
-
-    fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
-        rustls::crypto::ring::default_provider().signature_verification_algorithms.supported_schemes()
-    }
-}
+// SkipVerifier removed — now using standard `webpki_roots` TLS verification.

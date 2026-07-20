@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use ui::{HistoryPage};
-use kestrel_core::history::ScanRecord;
+use peregrine_core::history::ScanRecord;
 
 #[component]
 pub fn History() -> Element {
@@ -10,9 +10,9 @@ pub fn History() -> Element {
     rsx! {
         HistoryPage {
             records: records,
-            on_select: move |id: String| { eprintln!("Selected scan: {id}"); },
+            on_select: move |_id: String| {},
             on_delete: move |id: String| {
-                let _ = kestrel_core::history::delete_scan(&id);
+                let _ = peregrine_core::history::delete_scan(&id);
                 let mut h = history();
                 h.retain(|r| r.id != id);
                 history.set(h);

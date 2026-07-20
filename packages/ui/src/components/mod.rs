@@ -8,6 +8,9 @@ mod tabs;
 mod modal;
 mod tooltip;
 mod empty_state;
+pub mod dashboard;
+pub mod host_panel;
+pub mod navbar;
 
 pub use button::{Button, ButtonVariant, ButtonSize};
 pub use card::{Card, CardVariant};

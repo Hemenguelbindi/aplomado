@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use ui::{DashboardView, models::HostInfo, ScanStatusUi};
-use kestrel_core::history::ScanRecord;
+use peregrine_core::history::ScanRecord;
 
 #[component]
 pub fn Dashboard() -> Element {

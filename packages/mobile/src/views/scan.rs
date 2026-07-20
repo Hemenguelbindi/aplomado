@@ -7,7 +7,7 @@ pub fn Scan() -> Element {
     let mut current_session = use_context::<Signal<Option<Session>>>();
     let mut status = use_context::<Signal<ScanStatusUi>>();
     let mut scan_results = use_context::<Signal<Vec<HostInfo>>>();
-    let _history = use_context::<Signal<Vec<kestrel_core::history::ScanRecord>>>();
+    let _history = use_context::<Signal<Vec<peregrine_core::history::ScanRecord>>>();
     let mut view_mode = use_signal(|| MapViewMode::Table);
     let mut scan_task: Signal<Option<Task>> = use_signal(|| None);
     let mut selected_host: Signal<Option<String>> = use_signal(|| None);
@@ -44,13 +44,13 @@ pub fn Scan() -> Element {
                         let mut found = Vec::new();
 
                         for (i, target) in cfg.targets.iter().enumerate() {
-                            let ips = ui::scan_engine::resolve_targets(target);
+                            let ips = peregrine_core::scanner::resolve_targets(target);
                             for ip in ips {
                                 status.set(ScanStatusUi::Scanning {
                                     current: (i + 1) as u32,
                                     total,
                                 });
-                                let host = ui::scan_engine::scan_single_target(ip, &cfg.ports, None).await;
+                                let host = peregrine_core::scanner::engine::scan_single_target(ip, &cfg.ports, None).await;
                                 found.push(host);
                                 scan_results.set(found.clone());
                                 tokio::task::yield_now().await;

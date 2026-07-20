@@ -6,15 +6,18 @@ edition = "2021"
 [dependencies]
 dioxus = { workspace = true }
 api = { workspace = true, optional = true }
-kestrel-core = { workspace = true }
+peregrine-core = { workspace = true }
+peregrine-types = { workspace = true }
 chrono = { version = "0.4", features = ["serde"] }
 petgraph = { version = "0.7", default-features = false, features = ["serde", "graphmap", "stable_graph"] }
 serde = { version = "1.0", features = ["derive"] }
+uuid = { workspace = true }
 fastrand = "2.0"
+web-time = "1.0"
 tokio = { version = "1", features = ["net", "time"], optional = true }
 futures = { version = "0.3", optional = true }
 
 [features]
 default = []
-server = ["api/server", "kestrel-core/scanner", "kestrel-core/fingerprint", "scan-engine"]
-scan-engine = ["kestrel-core/scanner", "kestrel-core/fingerprint", "tokio", "futures"]
+server = ["api/server", "peregrine-core/scanner", "peregrine-core/fingerprint", "scan-engine"]
+scan-engine = ["peregrine-core/scanner", "peregrine-core/fingerprint", "tokio", "futures"]

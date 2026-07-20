@@ -49,7 +49,7 @@ pub fn Card(props: CardProps) -> Element {
 
     rsx! {
         div {
-            class: "border rounded-lg p-4",
+            class: "border rounded-lg p-4 transition-colors duration-200 hover:opacity-90",
             style: "background: {bg}; border-color: {border}",
             if has_header {
                 div {

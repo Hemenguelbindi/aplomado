@@ -5,5 +5,5 @@ body {
     background-color: var(--color-background);
     color: var(--color-text-primary);
     font-family: var(--font-family);
-    margin: 20px;
+    margin: 0;
 }

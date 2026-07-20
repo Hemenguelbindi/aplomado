@@ -49,17 +49,37 @@ pub struct VersionRange {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CveEntry {
     pub id: String,
+    pub package_name: String,
     pub description: String,
     pub cvss_score: f32,
     pub severity: CveSeverity,
     pub cpe_match: Vec<String>,
     pub affected_versions: Vec<VersionRange>,
+    /// Версия, в которой исправлена уязвимость (например "2.4.68")
+    pub fixed_version: Option<String>,
+    /// URL к информации об уязвимости (например https://httpd.apache.org/security/...)
+    pub advisory_url: Option<String>,
 }
 
-/// База CVE (хранится в MessagePack)
+/// База CVE (хранится в памяти, загружается из SQLite)
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CveDatabase {
     pub entries: Vec<CveEntry>,
     pub updated: String,
     pub total_count: u32,
+}
+
+/// Flat-модель для SQLite таблицы vulnerability_fixes.
+/// Соответствует рекомендации по Knowledge Base.
+#[derive(Debug, Clone)]
+pub struct VulnerabilityFix {
+    pub cve_id: String,
+    pub package_name: String,
+    pub affected_version_start: Option<String>,
+    pub affected_version_end: Option<String>,
+    pub fixed_version: Option<String>,
+    pub advisory_url: Option<String>,
+    pub severity: String,
+    pub cvss_score: f32,
+    pub description: String,
 }

@@ -8,7 +8,12 @@ pub mod port;
 #[cfg(feature = "scanner")]
 pub mod progress;
 
-use std::net::{IpAddr, Ipv4Addr};
+#[cfg(feature = "fingerprint")]
+pub mod engine;
+
+use std::net::{IpAddr, Ipv4Addr, ToSocketAddrs};
+
+use crate::scanner::model::ScanTarget;
 
 /// Развернуть CIDR в список IP-адресов.
 /// Например "10.2.2.0/24" → [10.2.2.1, 10.2.2.2, ..., 10.2.2.254]
@@ -48,6 +53,40 @@ pub fn expand_cidr(cidr: &str) -> Vec<IpAddr> {
         ips.push(IpAddr::V4(Ipv4Addr::from(network.wrapping_add(i))));
     }
     ips
+}
+
+/// Resolve a `ScanTarget` to a list of IP addresses.
+pub fn resolve_targets(target: &ScanTarget) -> Vec<IpAddr> {
+    match target {
+        ScanTarget::Ip(ip) => vec![*ip],
+        ScanTarget::Hostname(h) => (h.as_str(), 0)
+            .to_socket_addrs()
+            .ok()
+            .into_iter()
+            .flat_map(|addrs| addrs.map(|s| s.ip()))
+            .collect(),
+        ScanTarget::Cidr(c) => expand_cidr(c),
+        ScanTarget::Range(start, end) => {
+            expand_range(&start.to_string(), &end.to_string())
+        }
+    }
+}
+
+/// Resolve a raw string target to a list of IP addresses.
+/// Accepts: single IP, CIDR notation, or hostname.
+pub fn resolve_target_str(s: &str) -> Vec<IpAddr> {
+    let s = s.trim();
+    if let Ok(ip) = s.parse::<IpAddr>() {
+        return vec![ip];
+    }
+    if s.contains('/') {
+        return expand_cidr(s);
+    }
+    // Hostname — DNS resolve
+    if let Ok(addrs) = (s, 0u16).to_socket_addrs() {
+        return addrs.map(|a| a.ip()).collect();
+    }
+    vec![]
 }
 
 /// Развернуть диапазон IP вида "10.2.2.1-10.2.2.254"

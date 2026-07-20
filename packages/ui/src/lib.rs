@@ -45,10 +45,7 @@ pub use components::{
 };
 
 pub mod helpers;
-pub use helpers::{create_default_session, build_scan_record, targets_to_strings};
-
-#[cfg(all(feature = "scan-engine", not(target_arch = "wasm32")))]
-pub mod scan_engine;
+pub use helpers::{create_default_session, build_scan_record, targets_to_strings, handle_scan_success, handle_scan_failure};
 
 /// Tailwind CSS stylesheet, shared across all platforms.
 pub const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");

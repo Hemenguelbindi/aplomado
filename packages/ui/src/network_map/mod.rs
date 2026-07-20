@@ -6,6 +6,7 @@ mod tab_overview;
 mod tab_ports;
 mod tab_services;
 mod tab_cve;
+mod tab_notes;
 
 pub use types::{MapViewMode, NetworkMapProps};
 pub use host_detail::HostDetailPanel;

@@ -50,7 +50,7 @@ pub fn TableRow(props: TableRowProps) -> Element {
             }
             td {
                 class: "py-2 px-3 font-mono text-xs",
-                style: "color: var(--color-text-secondary)",
+                style: "color: var(--color-text-secondary); word-break: break-all; overflow-wrap: break-word; max-width: 200px",
                 "{ports_str}"
             }
             td { class: "py-2 px-3 text-xs font-mono",

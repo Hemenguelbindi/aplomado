@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use ui::{models::{HostInfo, Session}, Navbar, ScanStatusUi, ThemeProvider};
-use views::{Dashboard, Home, Scan, History};
+use views::{Dashboard, Home, Scan, History, Diff};
 
 mod views;
 
@@ -16,6 +16,8 @@ enum Route {
     Scan {},
     #[route("/history")]
     History {},
+    #[route("/diff")]
+    Diff {},
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -28,7 +30,7 @@ fn main() {
 fn App() -> Element {
     let scan_results = use_signal(Vec::<HostInfo>::new);
     let scan_status = use_signal(|| ScanStatusUi::Idle);
-    let history = use_signal(kestrel_core::history::load_history);
+    let history = use_signal(peregrine_core::history::load_history);
     let current_session = use_signal(|| {
         None::<Session>
     });
@@ -47,25 +49,7 @@ fn App() -> Element {
                     }
                 }
                 if let Ok(Some(data)) = api::get_last_scan().await {
-                    let hosts: Vec<HostInfo> = data.hosts.into_iter().map(|r| {
-                        HostInfo {
-                            ip: r.ip.parse().unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::UNSPECIFIED)),
-                            hostname: r.hostname,
-                            ttl: None,
-                            os_guess: r.os_guess,
-                            alive: r.alive,
-                            ports: r.ports.into_iter().map(|p| ui::models::PortInfo {
-                                port: p.port,
-                                service_name: p.service,
-                                service_version: p.version,
-                                banner: p.banner,
-                                cpe: None,
-                                cves: vec![],
-                            }).collect(),
-                            route: vec![],
-                        }
-                    }).collect();
-                    results.set(hosts);
+                    results.set(data.hosts);
                     st.set(ScanStatusUi::Done(data.count));
                 }
             });
@@ -79,6 +63,7 @@ fn App() -> Element {
 
     rsx! {
         ThemeProvider {
+            document::Title { "Peregrine — Сканер уязвимостей" }
             document::Link { rel: "icon", href: FAVICON }
             Router::<Route> {}
         }
@@ -104,6 +89,7 @@ fn WebNavbar() -> Element {
         Route::Home {} => "/hosts".to_string(),
         Route::Scan {} => "/scan".to_string(),
         Route::History {} => "/history".to_string(),
+        Route::Diff {} => "/diff".to_string(),
     };
 
     rsx! {
@@ -116,7 +102,7 @@ fn WebNavbar() -> Element {
                 class: "no-underline transition-colors duration-200 hover:cursor-pointer",
                 style: "color: var(--color-text-primary); margin-right: 1.25rem",
                 to: Route::Dashboard {},
-                "Dashboard"
+                "Панель"
             }
             Link {
                 class: "no-underline transition-colors duration-200 hover:cursor-pointer",
@@ -135,6 +121,12 @@ fn WebNavbar() -> Element {
                 style: "color: var(--color-text-primary); margin-right: 1.25rem",
                 to: Route::History {},
                 "История"
+            }
+            Link {
+                class: "no-underline transition-colors duration-200 hover:cursor-pointer",
+                style: "color: var(--color-text-primary); margin-right: 1.25rem",
+                to: Route::Diff {},
+                "Сравнение"
             }
         }
         Outlet::<Route> {}

@@ -155,14 +155,7 @@ async fn send_probe(
     .flatten()
 }
 
-impl std::fmt::Display for Hop {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.rtt_ms {
-            Some(ms) => write!(f, "{}. {} ({}ms)", self.hop, self.ip, ms as u32),
-            None => write!(f, "{}. {}", self.hop, self.ip),
-        }
-    }
-}
+
 
 #[cfg(test)]
 mod tests {
@@ -172,7 +165,7 @@ mod tests {
     fn test_hop_display() {
         let hop = Hop {
             hop: 1,
-            ip: "10.2.2.1".parse().unwrap(),
+            ip: IpAddr::V4(Ipv4Addr::new(10, 2, 2, 1)),
             rtt_ms: Some(0.5),
         };
         assert_eq!(hop.to_string(), "1. 10.2.2.1 (0ms)");
@@ -181,9 +174,9 @@ mod tests {
     #[test]
     fn test_hop_sort() {
         let mut hops = vec![
-            Hop { hop: 3, ip: "10.2.0.7".parse().unwrap(), rtt_ms: None },
-            Hop { hop: 1, ip: "10.2.2.1".parse().unwrap(), rtt_ms: None },
-            Hop { hop: 2, ip: "10.2.0.1".parse().unwrap(), rtt_ms: None },
+            Hop { hop: 3, ip: IpAddr::V4(Ipv4Addr::new(10, 2, 0, 7)), rtt_ms: None },
+            Hop { hop: 1, ip: IpAddr::V4(Ipv4Addr::new(10, 2, 2, 1)), rtt_ms: None },
+            Hop { hop: 2, ip: IpAddr::V4(Ipv4Addr::new(10, 2, 0, 1)), rtt_ms: None },
         ];
         hops.sort_by(|a, b| a.hop.cmp(&b.hop));
         assert_eq!(hops[0].hop, 1);

@@ -1,6 +1,6 @@
 use crate::HistoryView;
 use dioxus::prelude::*;
-use kestrel_core::history::ScanRecord;
+use peregrine_core::history::ScanRecord;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct HistoryPageProps {

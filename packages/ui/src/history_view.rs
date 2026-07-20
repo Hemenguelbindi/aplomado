@@ -1,6 +1,7 @@
-use dioxus::prelude::*;
 use crate::components::EmptyState;
-use kestrel_core::history::ScanRecord;
+use crate::helpers::format_datetime;
+use dioxus::prelude::*;
+use peregrine_core::history::ScanRecord;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct HistoryViewProps {
@@ -57,7 +58,7 @@ pub fn HistoryView(props: HistoryViewProps) -> Element {
                                 td {
                                     class: "py-2 px-3",
                                     style: "color: var(--color-text-secondary)",
-                                    "{&record.timestamp[..19.min(record.timestamp.len())].replace(\"T\", \" \")}"
+                                    "{format_datetime(&record.timestamp)}"
                                 }
                                 td {
                                     class: "py-2 px-3 font-mono text-xs",

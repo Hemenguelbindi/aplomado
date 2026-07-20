@@ -1,75 +1,150 @@
-# Development
+# Peregrine
 
-Your new workspace contains a member crate for each of the web, desktop and mobile platforms, a `ui` crate for shared components and a `api` crate for shared backend logic:
+**Peregrine** — это кроссплатформенный сканер уязвимостей с графическим интерфейсом, написанный на Rust с использованием Dioxus 0.7.
 
-```
-your_project/
-├─ README.md
-├─ Cargo.toml
-└─ packages/
-   ├─ web/
-   │  └─ ... # Web specific UI/logic
-   ├─ desktop/
-   │  └─ ... # Desktop specific UI/logic
-   ├─ mobile/
-   │  └─ ... # Mobile specific UI/logic
-   ├─ api/
-   │  └─ ... # All shared server logic
-   └─  ui/
-      └─ ... # Component shared between multiple platforms
-```
+Он выполняет TCP-сканирование портов, захват баннеров (banner grabbing), определение ОС по баннерам, поиск CVE-уязвимостей через CIRCL API, traceroute, сохранение истории сканирования в SQLite и экспорт отчётов в HTML/JSON/TXT/CSV/ZIP.
 
-## Platform crates
+Назван в честь **сапсана** (*Falco peregrinus*) — самой быстрой птицы в мире, развивающей скорость до 390 км/ч при пикировании на жертву.
 
-Each platform crate contains the entry point for the platform, and any assets, components and dependencies that are specific to that platform. For example, the desktop crate in the workspace looks something like this:
+## Возможности
 
-```
-desktop/ # The desktop crate contains all platform specific UI, logic and dependencies for the desktop app
-├─ assets/ # Assets used by the desktop app - Any platform specific assets should go in this folder
-├─ src/
-│  ├─ main.rs # The entrypoint for the desktop app. It also defines the routes for the desktop platform
-│  ├─ views/ # The views each route will render in the desktop version of the app
-│  │  ├─ mod.rs # Defines the module for the views route and re-exports the components for each route
-│  │  ├─ blog.rs # The component that will render at the /blog/:id route
-│  │  ├─ home.rs # The component that will render at the / route
-├─ Cargo.toml # The desktop crate's Cargo.toml - This should include all desktop specific dependencies
-```
+- **Сканирование портов** — TCP connect scan для диапазонов IP, CIDR-сетей, hostname'ов
+- **Гибкие пресеты** — Quick, Standard, Full, Vuln, Cameras + кастомные порты
+- **Баннер-грейбинг** — захват баннеров SSH/HTTP/HTTPS/FTP/SMTP/MySQL/Redis
+- **Определение ОС** — эвристическое определение ОС по баннерам
+- **Поиск CVE** — сопоставление версий сервисов с CVE-базой CIRCL
+- **Traceroute** — in-process traceroute без прав root
+- **История сканирований** — SQLite-хранилище с просмотром и сравнением результатов (diff)
+- **Экспорт отчётов** — HTML, JSON, TXT, CSV, ZIP
+- **Тёмная/светлая тема** — встроенная поддержка обеих тем
+- **Топология сети** — SVG-граф сети с dagre-компоновкой
+- **Многоплатформенность** — Desktop (native), Web, Mobile (Android/iOS)
 
-When you start developing with the workspace setup each of the platform crates will look almost identical. The UI starts out exactly the same on all platforms. However, as you continue developing your application, this setup makes it easy to let the views for each platform change independently.
+## Платформы
 
-## Shared UI crate
+| Платформа | Статус | Запуск |
+|-----------|--------|--------|
+| **Desktop** (Linux/macOS/Windows) | ✅ Готово | `cargo run --bin peregrine -- run` |
+| **Web** | ✅ Готово | `dx serve` в `packages/web/` |
+| **Mobile** (Android/iOS) | ✅ Готово | `dx serve --platform android` |
 
-The workspace contains a `ui` crate with components that are shared between multiple platforms. You should put any UI elements you want to use in multiple platforms in this crate. You can also put some shared client side logic in this crate, but be careful to not pull in platform specific dependencies. The `ui` crate starts out something like this:
+## Скриншоты
 
-```
-ui/
-├─ src/
-│  ├─ lib.rs # The entrypoint for the ui crate
-│  ├─ hero.rs # The Hero component that will be used in every platform
-│  ├─ echo.rs # The shared echo component that communicates with the server
-│  ├─ navbar.rs # The Navbar component that will be used in the layout of every platform's router
-```
+| Dashboard | Сканирование |
+|-----------|--------------|
+| ![Dashboard](packages/ui/assets/screenshots/dashboard.png) | ![Scan](packages/ui/assets/screenshots/scan-page.png) |
 
-## Shared backend logic
+| Хосты | История | Сравнение |
+|-------|---------|-----------|
+| ![Hosts](packages/ui/assets/screenshots/hosts-page.png) | ![History](packages/ui/assets/screenshots/history-page.png) | ![Diff](packages/ui/assets/screenshots/diff-page.png) |
 
-The workspace contains a `api` crate with shared backend logic. This crate defines all of the shared server functions for all platforms. Server functions are async functions that expose a public API on the server. They can be called like a normal async function from the client. When you run `dx serve`, all of the server functions will be collected in the server build and hosted on a public API for the client to call. The `api` crate starts out something like this:
+## Архитектура
+
+Проект организован как Cargo workspace из 7 пакетов:
 
 ```
-api/
-├─ src/
-│  ├─ lib.rs # Exports a server function that echos the input string
+peregrine/
+├── Cargo.toml                  # workspace root
+├── packages/
+│   ├── types/                  # Общие модели данных (ScanTarget, HostInfo, PortInfo, CveSummary …)
+│   ├── core/                   # Бизнес-логика: сканер, fingerprint, CVE, история, экспорт, traceroute
+│   ├── api/                    # Server Functions (Dioxus fullstack) — REST API для web-версии
+│   ├── ui/                     # Все UI-компоненты, общие для всех платформ
+│   ├── web/                    # Web-точка входа (Dioxus Web + fullstack)
+│   ├── desktop/                # Desktop-точка входа + CLI (Clap)
+│   └── mobile/                 # Mobile-точка входа (Android/iOS)
 ```
 
-### Serving Your App
+### Поток данных
 
-Navigate to the platform crate of your choice:
+```
+[Desktop/Mobile/Web UI]
+       │
+       ▼
+ ┌─────────────┐     ┌──────────────┐
+ │  api (REST) │◄───►│  core        │
+ │  или прямой  │     │  ├─ scanner  │
+ │  вызов core  │     │  ├─ fingerprint
+ └─────────────┘     │  ├─ cve      │
+                     │  ├─ history  │
+                     │  ├─ export   │
+                     │  └─ traceroute│
+                     └──────────────┘
+                            │
+                            ▼
+                     ┌──────────────┐
+                     │  SQLite (DB) │
+                     └──────────────┘
+```
+
+## Быстрый старт
+
+### Требования
+
+- Rust 1.80+
+- Tailwind CSS CLI (для пересборки CSS, опционально)
+
+### Сборка и запуск Desktop
+
 ```bash
-cd web
+git clone https://github.com/ваш-username/peregrine.git
+cd peregrine
+cargo run --bin peregrine -- run
 ```
 
-and serve:
+### CLI-режим
 
 ```bash
+# Сканирование одного хоста
+cargo run --bin peregrine -- scan 192.168.1.1
+
+# Сканирование подсети
+cargo run --bin peregrine -- scan 192.168.1.0/24
+
+# Список истории
+cargo run --bin peregrine -- list
+
+# Детали скана
+cargo run --bin peregrine -- show --last
+
+# Экспорт отчёта
+cargo run --bin peregrine -- export --last --format html
+
+# Обновление CVE базы
+cargo run --bin peregrine -- update-cve
+```
+
+### Web-версия
+
+```bash
+cd packages/web
 dx serve
 ```
 
+## Тестирование
+
+```bash
+# Все тесты
+cargo test
+
+# Тесты конкретного пакета
+cargo test -p peregrine-core
+
+# Тесты экспорта
+cargo test -p peregrine-core --test export_tests
+```
+
+## Технологии
+
+- **Dioxus 0.7** — UI фреймворк (web + desktop + mobile)
+- **Tokio** — асинхронный рантайм
+- **SQLite (Rusqlite)** — хранение истории и CVE
+- **Reqwest + Rustls** — HTTP-клиент для CVE API
+- **Petgraph + Dagre** — рендеринг топологии сети
+- **Tailwind CSS v4** — стилизация
+- **Clap** — CLI-аргументы (desktop)
+- **CIRCL CVE API** — база уязвимостей
+
+## Лицензия
+
+MIT License — см. [LICENSE](LICENSE).

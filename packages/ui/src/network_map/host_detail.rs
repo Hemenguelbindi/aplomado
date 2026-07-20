@@ -1,11 +1,11 @@
 use dioxus::prelude::*;
-use crate::components::{Tabs, TabDef, Badge, BadgeVariant, TextInput};
+use crate::components::{Tabs, TabDef, Badge, BadgeVariant};
 use super::types::{HostDetailPanelProps, HostDetailTab, count_cves, os_icon, risk_color};
 use super::tab_overview::OverviewTab;
 use super::tab_ports::PortsTab;
 use super::tab_services::ServicesTab;
 use super::tab_cve::CveTab;
-
+use super::tab_notes::NotesTab;
 #[component]
 pub fn HostDetailPanel(props: HostDetailPanelProps) -> Element {
     let mut tab = use_signal(|| "Overview".to_string());
@@ -67,18 +67,9 @@ pub fn HostDetailPanel(props: HostDetailPanelProps) -> Element {
                     HostDetailTab::Services => rsx! { ServicesTab { ports: host.ports.clone() } },
                     HostDetailTab::Cve => rsx! { CveTab { host: host.clone() } },
                     HostDetailTab::Notes => rsx! {
-                        div { class: "space-y-3",
-                            TextInput {
-                                value: notes(),
-                                placeholder: "Заметки об этом хосте...",
-                                class: "h-32 resize-y",
-                                oninput: move |e| notes.set(e),
-                            }
-                            div {
-                                class: "text-xs",
-                                style: "color: var(--color-text-muted)",
-                                "Заметки сохраняются локально в сессии"
-                            }
+                        NotesTab {
+                            value: notes(),
+                            oninput: move |e| notes.set(e),
                         }
                     },
                 }

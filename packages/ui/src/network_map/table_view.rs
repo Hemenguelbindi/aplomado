@@ -1,3 +1,4 @@
+use crate::helpers::pluralize;
 use crate::models::HostInfo;
 use dioxus::prelude::*;
 use super::types::count_cves;
@@ -62,6 +63,8 @@ pub fn TableView(props: TableViewProps) -> Element {
         match sd { SortDir::Asc => cmp, SortDir::Desc => cmp.reverse() }
     });
 
+    let count_label = pluralize(sorted.len(), "хост", "хоста", "хостов");
+
     rsx! {
         div { class: "space-y-2",
             div { class: "flex items-center gap-2",
@@ -75,7 +78,7 @@ pub fn TableView(props: TableViewProps) -> Element {
                 span {
                     class: "text-xs",
                     style: "color: var(--color-text-muted)",
-                    "{sorted.len()} хостов"
+                    "{count_label}"
                 }
             }
             div { class: "overflow-x-auto",

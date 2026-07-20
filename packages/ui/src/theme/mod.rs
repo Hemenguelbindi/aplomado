@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+mod constants;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ColorPalette {
     pub primary: String,
@@ -213,10 +215,23 @@ impl Theme {
     }
 }
 
-pub fn dark_theme() -> Theme {
+/// Конструктор темы: общие поля (typography, spacing, border_radius)
+/// берутся из `constants`, различающиеся (colors, shadows) передаются явно.
+fn make_theme(name: &str, colors: ColorPalette, shadows: Shadows) -> Theme {
     Theme {
-        name: "dark".to_string(),
-        colors: ColorPalette {
+        name: name.to_string(),
+        colors,
+        typography: constants::default_typography(),
+        spacing: constants::default_spacing(),
+        border_radius: constants::default_border_radius(),
+        shadows,
+    }
+}
+
+pub fn dark_theme() -> Theme {
+    make_theme(
+        "dark",
+        ColorPalette {
             primary: "#58a6ff".to_string(),
             primary_hover: "#4a8fd4".to_string(),
             secondary: "#8b949e".to_string(),
@@ -245,38 +260,7 @@ pub fn dark_theme() -> Theme {
             severity_low: "#3fb950".to_string(),
             severity_unknown: "#8b949e".to_string(),
         },
-        typography: Typography {
-            font_family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif".to_string(),
-            font_family_mono: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace".to_string(),
-            text_xs: "0.75rem".to_string(),
-            text_sm: "0.875rem".to_string(),
-            text_base: "1rem".to_string(),
-            text_lg: "1.125rem".to_string(),
-            text_xl: "1.25rem".to_string(),
-            text_2xl: "1.5rem".to_string(),
-            text_4xl: "2.25rem".to_string(),
-            font_normal: "400".to_string(),
-            font_semibold: "600".to_string(),
-            font_bold: "700".to_string(),
-        },
-        spacing: Spacing {
-            unit: "0.25rem".to_string(),
-            xs: "0.125rem".to_string(),
-            sm: "0.25rem".to_string(),
-            md: "0.5rem".to_string(),
-            lg: "1rem".to_string(),
-            xl: "1.5rem".to_string(),
-            xxl: "2rem".to_string(),
-        },
-        border_radius: BorderRadius {
-            none: "0".to_string(),
-            sm: "0.125rem".to_string(),
-            md: "0.25rem".to_string(),
-            lg: "0.5rem".to_string(),
-            xl: "0.75rem".to_string(),
-            full: "9999px".to_string(),
-        },
-        shadows: Shadows {
+        Shadows {
             none: "none".to_string(),
             sm: "0 1px 2px rgba(0, 0, 0, 0.3)".to_string(),
             md: "0 4px 6px rgba(0, 0, 0, 0.4)".to_string(),
@@ -284,13 +268,13 @@ pub fn dark_theme() -> Theme {
             xl: "0 20px 25px rgba(0, 0, 0, 0.6)".to_string(),
             glow_primary: "0 0 20px rgba(88, 166, 255, 0.3)".to_string(),
         },
-    }
+    )
 }
 
 pub fn light_theme() -> Theme {
-    Theme {
-        name: "light".to_string(),
-        colors: ColorPalette {
+    make_theme(
+        "light",
+        ColorPalette {
             primary: "#0969da".to_string(),
             primary_hover: "#0550ae".to_string(),
             secondary: "#656d76".to_string(),
@@ -319,38 +303,7 @@ pub fn light_theme() -> Theme {
             severity_low: "#1a7f37".to_string(),
             severity_unknown: "#656d76".to_string(),
         },
-        typography: Typography {
-            font_family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif".to_string(),
-            font_family_mono: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace".to_string(),
-            text_xs: "0.75rem".to_string(),
-            text_sm: "0.875rem".to_string(),
-            text_base: "1rem".to_string(),
-            text_lg: "1.125rem".to_string(),
-            text_xl: "1.25rem".to_string(),
-            text_2xl: "1.5rem".to_string(),
-            text_4xl: "2.25rem".to_string(),
-            font_normal: "400".to_string(),
-            font_semibold: "600".to_string(),
-            font_bold: "700".to_string(),
-        },
-        spacing: Spacing {
-            unit: "0.25rem".to_string(),
-            xs: "0.125rem".to_string(),
-            sm: "0.25rem".to_string(),
-            md: "0.5rem".to_string(),
-            lg: "1rem".to_string(),
-            xl: "1.5rem".to_string(),
-            xxl: "2rem".to_string(),
-        },
-        border_radius: BorderRadius {
-            none: "0".to_string(),
-            sm: "0.125rem".to_string(),
-            md: "0.25rem".to_string(),
-            lg: "0.5rem".to_string(),
-            xl: "0.75rem".to_string(),
-            full: "9999px".to_string(),
-        },
-        shadows: Shadows {
+        Shadows {
             none: "none".to_string(),
             sm: "0 1px 2px rgba(0, 0, 0, 0.1)".to_string(),
             md: "0 4px 6px rgba(0, 0, 0, 0.15)".to_string(),
@@ -358,7 +311,7 @@ pub fn light_theme() -> Theme {
             xl: "0 20px 25px rgba(0, 0, 0, 0.25)".to_string(),
             glow_primary: "0 0 20px rgba(9, 105, 218, 0.3)".to_string(),
         },
-    }
+    )
 }
 
 pub fn get_theme(name: &str) -> Theme {

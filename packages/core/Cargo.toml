@@ -1,5 +1,5 @@
 [package]
-name = "kestrel-core"
+name = "peregrine-core"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,16 +7,16 @@ edition = "2021"
 futures = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-thiserror = "2"
 dirs = "5"
-rmp-serde = "1"
-once_cell = "1"
+peregrine-types = { workspace = true }
 rusqlite = { version = "0.32", features = ["bundled"], optional = true }
+zip = { version = "2", optional = true }
 
 # Server-only (not compiled for WASM)
 tokio = { version = "1", features = ["net", "time", "rt", "rt-multi-thread", "macros", "sync", "process"], optional = true }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], optional = true, default-features = false }
 rustls = { version = "0.23", features = ["ring", "logging", "std", "tls12"], default-features = false, optional = true }
+webpki-roots = { version = "0.26", optional = true }
 tokio-rustls = { version = "0.26", optional = true }
 socket2 = { version = "0.5", optional = true }
 chrono = { version = "0.4", features = ["serde"], optional = true }
@@ -24,6 +24,7 @@ chrono = { version = "0.4", features = ["serde"], optional = true }
 [features]
 default = []
 scanner = ["tokio", "socket2", "tokio/process"]
-fingerprint = ["scanner", "reqwest", "rustls", "tokio-rustls"]
-cve-client = ["reqwest", "chrono"]
+fingerprint = ["scanner", "reqwest", "rustls", "tokio-rustls", "webpki-roots", "cve-client"]
+cve-client = ["reqwest", "chrono", "database"]
 database = ["rusqlite"]
+export = ["zip"]

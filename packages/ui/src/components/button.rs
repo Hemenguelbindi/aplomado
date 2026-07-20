@@ -52,7 +52,7 @@ pub struct ButtonProps {
 
 #[component]
 pub fn Button(props: ButtonProps) -> Element {
-    let base = "inline-flex items-center justify-center rounded font-medium cursor-pointer transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed";
+    let base = "inline-flex items-center justify-center rounded font-medium cursor-pointer transition-colors duration-150 hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed";
 
     let size_class = match props.size {
         ButtonSize::Sm => "px-2 py-1 text-xs",

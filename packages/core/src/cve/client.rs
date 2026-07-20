@@ -1,28 +1,203 @@
 use std::path::Path;
 
-use crate::cve::database::CveDatabase;
+use crate::cve::database::{CveDatabase, CveEntry, CveSeverity, VersionRange, VulnerabilityFix};
 
-/// Загрузить CVE базу из MessagePack файла.
+/// Загрузить CVE базу из SQLite.
+/// Если БД не существует или произошла ошибка — возвращается пустая база.
 pub fn load_cve_db(path: &Path) -> CveDatabase {
-    if !path.exists() {
-        return CveDatabase::default();
+    #[cfg(feature = "database")]
+    {
+        let fixes = load_all_fixes(path);
+        if !fixes.is_empty() {
+            return fixes_to_database(&fixes);
+        }
     }
-    match std::fs::read(path) {
-        Ok(data) => rmp_serde::from_slice(&data).unwrap_or_default(),
-        Err(_) => CveDatabase::default(),
-    }
+    CveDatabase::default()
 }
 
-/// Сохранить CVE базу в MessagePack файл.
+/// Сохранить CVE базу в SQLite (перезаписывает все записи).
 pub fn save_cve_db(db: &CveDatabase, path: &Path) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let data =
-        rmp_serde::to_vec(db).map_err(std::io::Error::other)?;
-    std::fs::write(path, &data)?;
+    #[cfg(feature = "database")]
+    {
+        let fixes = database_to_fixes(db);
+        save_fixes(path, &fixes).map_err(std::io::Error::other)?;
+    }
     Ok(())
 }
+
+// ─── SQLite operations ────────────────────────────────────────────
+
+/// Открыть (и создать при необходимости) SQLite БД уязвимостей.
+#[cfg(feature = "database")]
+fn open_vuln_db(path: &Path) -> Result<rusqlite::Connection, String> {
+    let conn = rusqlite::Connection::open(path).map_err(|e| e.to_string())?;
+
+    // WAL mode for concurrent reads during BG update
+    conn.execute_batch("PRAGMA journal_mode=WAL;").ok();
+
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS vulnerability_fixes (
+            cve_id TEXT NOT NULL,
+            package_name TEXT NOT NULL,
+            affected_version_start TEXT,
+            affected_version_end TEXT,
+            fixed_version TEXT,
+            advisory_url TEXT,
+            severity TEXT NOT NULL,
+            cvss_score REAL NOT NULL DEFAULT 0.0,
+            description TEXT NOT NULL DEFAULT '',
+            PRIMARY KEY (cve_id, package_name)
+        );",
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(conn)
+}
+
+/// Загрузить все записи из SQLite.
+#[cfg(feature = "database")]
+fn load_all_fixes(path: &Path) -> Vec<VulnerabilityFix> {
+    let conn = match open_vuln_db(path) {
+        Ok(c) => c,
+        Err(_) => return vec![],
+    };
+    let mut stmt = match conn.prepare(
+        "SELECT cve_id, package_name, affected_version_start, affected_version_end,
+                fixed_version, advisory_url, severity, cvss_score, description
+         FROM vulnerability_fixes",
+    ) {
+        Ok(s) => s,
+        Err(_) => return vec![],
+    };
+    let fixes = stmt
+        .query_map([], |row| {
+            Ok(VulnerabilityFix {
+                cve_id: row.get(0)?,
+                package_name: row.get(1)?,
+                affected_version_start: row.get(2)?,
+                affected_version_end: row.get(3)?,
+                fixed_version: row.get(4)?,
+                advisory_url: row.get(5)?,
+                severity: row.get(6)?,
+                cvss_score: row.get(7)?,
+                description: row.get(8)?,
+            })
+        });
+    match fixes {
+        Ok(rows) => rows.filter_map(|r| r.ok()).collect(),
+        Err(_) => vec![],
+    }
+}
+
+/// Сохранить записи в SQLite (полная перезапись).
+#[cfg(feature = "database")]
+fn save_fixes(path: &Path, fixes: &[VulnerabilityFix]) -> Result<(), String> {
+    let conn = open_vuln_db(path)?;
+    conn.execute("DELETE FROM vulnerability_fixes", [])
+        .map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(
+            "INSERT OR IGNORE INTO vulnerability_fixes
+             (cve_id, package_name, affected_version_start, affected_version_end,
+              fixed_version, advisory_url, severity, cvss_score, description)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        )
+        .map_err(|e| e.to_string())?;
+
+    for fix in fixes {
+        stmt.execute(rusqlite::params![
+            fix.cve_id,
+            fix.package_name,
+            fix.affected_version_start,
+            fix.affected_version_end,
+            fix.fixed_version,
+            fix.advisory_url,
+            fix.severity,
+            fix.cvss_score,
+            fix.description,
+        ])
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+// ─── Conversion helpers ───────────────────────────────────────────
+
+/// Сконвертировать Vec<VulnerabilityFix> в CveDatabase (in-memory модель).
+#[cfg(feature = "database")]
+fn fixes_to_database(fixes: &[VulnerabilityFix]) -> CveDatabase {
+    let mut db = CveDatabase::default();
+    for fix in fixes {
+        let cpes = get_cpe_for_service(&fix.package_name);
+        let affected_versions = vec![VersionRange {
+            start: fix.affected_version_start.clone().unwrap_or_default(),
+            end: fix.affected_version_end.clone().unwrap_or_default(),
+            start_including: true,
+            end_including: true,
+        }];
+        db.entries.push(CveEntry {
+            id: fix.cve_id.clone(),
+            package_name: fix.package_name.clone(),
+            description: fix.description.clone(),
+            cvss_score: fix.cvss_score,
+            severity: CveSeverity::from_cvss(fix.cvss_score),
+            cpe_match: cpes.iter().map(|s| s.to_string()).collect(),
+            affected_versions,
+            fixed_version: fix.fixed_version.clone(),
+            advisory_url: fix.advisory_url.clone(),
+        });
+    }
+    db.updated = chrono::Utc::now().to_rfc3339();
+    db.total_count = db.entries.len() as u32;
+    db
+}
+
+/// Сконвертировать CveDatabase в Vec<VulnerabilityFix> (для SQLite).
+#[cfg(feature = "database")]
+fn database_to_fixes(db: &CveDatabase) -> Vec<VulnerabilityFix> {
+    db.entries
+        .iter()
+        .map(|entry| {
+            let start = entry
+                .affected_versions
+                .first()
+                .and_then(|r| {
+                    if r.start.is_empty() {
+                        None
+                    } else {
+                        Some(r.start.clone())
+                    }
+                });
+            let end = entry
+                .affected_versions
+                .first()
+                .and_then(|r| {
+                    if r.end.is_empty() {
+                        None
+                    } else {
+                        Some(r.end.clone())
+                    }
+                });
+            VulnerabilityFix {
+                cve_id: entry.id.clone(),
+                package_name: entry.package_name.clone(),
+                affected_version_start: start,
+                affected_version_end: end,
+                fixed_version: entry.fixed_version.clone(),
+                advisory_url: entry.advisory_url.clone(),
+                severity: entry.severity.as_str().to_string(),
+                cvss_score: entry.cvss_score,
+                description: entry.description.clone(),
+            }
+        })
+        .collect()
+}
+
+// ─── CPE mapping (unchanged) ──────────────────────────────────────
 
 /// CPE → сервис mapping для запросов к CIRCL API
 pub const CPE_MAPPING: &[(&str, &[&str])] = &[

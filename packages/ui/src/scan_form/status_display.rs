@@ -1,6 +1,7 @@
-use dioxus::prelude::*;
 use crate::components::ProgressBar;
+use crate::helpers::pluralize;
 use crate::scan_form::ScanStatusUi;
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct StatusDisplayProps {
@@ -28,7 +29,7 @@ pub fn StatusDisplay(props: StatusDisplayProps) -> Element {
                     (*current as f64 / *total as f64) * 100.0
                 } else { 0.0 };
                 let label = if *total > 0 {
-                    format!("Сканирование... {}/{} хостов", current, total)
+                    format!("Сканирование... {}/{}", current, pluralize(*total as usize, "хост", "хоста", "хостов"))
                 } else {
                     "Сканирование...".to_string()
                 };
@@ -40,11 +41,14 @@ pub fn StatusDisplay(props: StatusDisplayProps) -> Element {
                     }
                 }
             },
-            ScanStatusUi::Done(count) => rsx! {
-                div {
-                    class: "text-center text-sm",
-                    style: "color: var(--color-success)",
-                    "Сканирование завершено. Найдено хостов: {count}"
+            ScanStatusUi::Done(count) => {
+                let found = pluralize(*count as usize, "хост", "хоста", "хостов");
+                rsx! {
+                    div {
+                        class: "text-center text-sm",
+                        style: "color: var(--color-success)",
+                        "Сканирование завершено. Найдено: {found}"
+                    }
                 }
             },
             ScanStatusUi::Error(e) => rsx! {

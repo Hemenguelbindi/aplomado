@@ -9,3 +9,6 @@ pub use scan::Scan;
 
 mod history;
 pub use history::History;
+
+mod diff;
+pub use diff::Diff;
