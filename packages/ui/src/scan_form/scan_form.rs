@@ -24,9 +24,7 @@ fn ports_info(preset: &ScanPreset) -> Option<Element> {
         .collect::<Vec<_>>()
         .join(", ");
     Some(rsx! {
-        div {
-            class: "text-xs font-mono mt-1",
-            style: "color: var(--color-text-muted)",
+        div { class: "text-xs font-mono mt-1 text-muted-foreground",
             "Порты ({count}): {list}"
         }
     })
@@ -44,21 +42,29 @@ pub fn ScanForm(props: ScanFormProps) -> Element {
     let targets = session.targets.clone();
     let targets_empty = targets.is_empty();
     let ports_info = ports_info(&current_preset);
+    let input_text = target_input();
+    let show_hint =
+        !input_text.is_empty() && input_text.len() < 3 && parse_target(&input_text).is_none();
 
     rsx! {
         div { key: "{session.id}-form", class: "space-y-4",
             SessionNameEditor { session: session.clone(), on_update: { let p = props.clone(); move |s| p.on_update_session.call(s) } }
-            TextInput {
-                value: target_input(),
-                placeholder: "IP, CIDR (10.2.64.0/24) или хост",
-                disabled: is_scanning,
-                oninput: move |e| target_input.set(e),
-                onkeydown: { let p = props.clone(); move |e: Event<KeyboardData>| {
-                    if e.key() == Key::Enter && !target_input().is_empty() {
-                        e.prevent_default();
-                        super::add_target_to_session(&p, &mut target_input, &preset, &custom_ports);
-                    }
-                }},
+            div { class: "relative",
+                TextInput {
+                    value: target_input(),
+                    placeholder: "IP, CIDR (10.2.64.0/24) или хост",
+                    disabled: is_scanning,
+                    oninput: move |e| target_input.set(e),
+                    onkeydown: { let p = props.clone(); move |e: Event<KeyboardData>| {
+                        if e.key() == Key::Enter && !target_input().is_empty() {
+                            e.prevent_default();
+                            super::add_target_to_session(&p, &mut target_input, &preset, &custom_ports);
+                        }
+                    }},
+                }
+                if show_hint {
+                    p { class: "text-[10px] mt-0.5 text-muted-foreground", "Введите IP-адрес (например, 192.168.1.1), CIDR (10.0.0.0/24) или доменное имя" }
+                }
             }
             PresetSelector { active: current_preset.clone(), disabled: is_scanning, on_select: move |p| preset.set(p) }
             if matches!(current_preset, ScanPreset::Custom) {

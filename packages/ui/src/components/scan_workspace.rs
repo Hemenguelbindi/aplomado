@@ -1,4 +1,6 @@
-use crate::components::{Button, ButtonSize, ButtonVariant, HostExplorer, Icon, IconName, IconSize};
+use crate::components::{
+    Button, ButtonSize, ButtonVariant, HostExplorer, Icon, IconName, IconSize,
+};
 use crate::models::{HostInfo, Session};
 use crate::{ScanConfigUi, ScanForm, ScanStatusUi};
 use dioxus::prelude::*;

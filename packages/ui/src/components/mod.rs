@@ -1,22 +1,22 @@
 mod badge;
 mod button;
 mod card;
+pub mod dashboard;
 mod empty_state;
 mod host_details_drawer;
 mod host_explorer;
+pub mod host_panel;
 mod icon;
 mod input;
 mod layout;
 mod modal;
+pub mod navbar;
 mod progress_bar;
 mod scan_workspace;
 mod select;
 mod tabs;
 mod tone;
 mod tooltip;
-pub mod dashboard;
-pub mod host_panel;
-pub mod navbar;
 
 pub use badge::{Badge, BadgeSize, BadgeVariant};
 pub use button::{Button, ButtonSize, ButtonVariant};

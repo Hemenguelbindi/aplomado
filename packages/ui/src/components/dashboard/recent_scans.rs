@@ -11,29 +11,27 @@ pub fn RecentScansTable(scans: Vec<ScanRecord>) -> Element {
             div { class: "overflow-x-auto",
                 table { class: "w-full text-sm",
                     thead {
-                        tr { class: "border-b", style: "border-color: var(--color-border)",
-                            th { class: "text-left py-2 px-3 font-medium", style: "color: var(--color-text-muted)", "Метка" }
-                            th { class: "text-left py-2 px-3 font-medium", style: "color: var(--color-text-muted)", "Цели" }
-                            th { class: "text-left py-2 px-3 font-medium", style: "color: var(--color-text-muted)", "Хосты" }
-                            th { class: "text-left py-2 px-3 font-medium", style: "color: var(--color-text-muted)", "Порты" }
-                            th { class: "text-left py-2 px-3 font-medium", style: "color: var(--color-text-muted)", "Дата" }
-                            th { class: "text-left py-2 px-3 font-medium", style: "color: var(--color-text-muted)", "Время" }
+                        tr { class: "border-b border-border",
+                            th { class: "text-left py-2 px-3 font-medium text-muted-foreground", "Метка" }
+                            th { class: "text-left py-2 px-3 font-medium text-muted-foreground", "Цели" }
+                            th { class: "text-left py-2 px-3 font-medium text-muted-foreground", "Хосты" }
+                            th { class: "text-left py-2 px-3 font-medium text-muted-foreground", "Порты" }
+                            th { class: "text-left py-2 px-3 font-medium text-muted-foreground", "Дата" }
+                            th { class: "text-left py-2 px-3 font-medium text-muted-foreground", "Время" }
                         }
                     }
                     tbody {
                         for record in scans {
-                            tr {
-                                class: "border-b hover:opacity-80",
-                                style: "border-color: var(--color-border-light); cursor: pointer",
-                                td { class: "py-2 px-3 font-medium", style: "color: var(--color-text-primary)", "{record.label}" }
-                                td { class: "py-2 px-3", style: "color: var(--color-text-secondary)", "{record.targets.join(\", \")}" }
+                            tr { class: "border-b border-border cursor-pointer hover:bg-surface-muted/30",
+                                td { class: "py-2 px-3 font-medium text-foreground", "{record.label}" }
+                                td { class: "py-2 px-3 text-muted-foreground", "{record.targets.join(\", \")}" }
                                 td { class: "py-2 px-3",
-                                    span { style: "color: var(--color-success)", "{record.hosts_alive}" }
-                                    span { style: "color: var(--color-text-muted)", " / {record.hosts_total}" }
+                                    span { class: "text-success", "{record.hosts_alive}" }
+                                    span { class: "text-muted-foreground", " / {record.hosts_total}" }
                                 }
-                                td { class: "py-2 px-3", style: "color: var(--color-text-secondary)", "{record.ports_total}" }
-                                td { class: "py-2 px-3", style: "color: var(--color-text-muted)", "{format_datetime(&record.timestamp)}" }
-                                td { class: "py-2 px-3", style: "color: var(--color-text-muted)", "{record.duration_secs}с" }
+                                td { class: "py-2 px-3 text-muted-foreground", "{record.ports_total}" }
+                                td { class: "py-2 px-3 text-muted-foreground", "{format_datetime(&record.timestamp)}" }
+                                td { class: "py-2 px-3 text-muted-foreground", "{record.duration_secs}с" }
                             }
                         }
                     }

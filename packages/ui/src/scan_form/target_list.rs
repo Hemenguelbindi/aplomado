@@ -1,6 +1,14 @@
 use crate::components::{Badge, BadgeVariant, Button, ButtonVariant, Icon, IconName, IconSize};
-use crate::models::{ScanTargetItem, TargetStatus};
+use crate::models::{ScanPreset, ScanTargetItem, TargetStatus};
 use dioxus::prelude::*;
+
+fn port_count(item: &ScanTargetItem) -> usize {
+    if matches!(item.preset, ScanPreset::Custom) && !item.custom_ports.is_empty() {
+        item.custom_ports.len()
+    } else {
+        item.preset.ports().len()
+    }
+}
 
 #[derive(Props, Clone, PartialEq)]
 pub struct TargetListProps {
@@ -52,6 +60,7 @@ pub fn TargetList(props: TargetListProps) -> Element {
                         TargetStatus::Done(_) => "Done",
                         TargetStatus::Error(_) => "Error",
                     };
+                    let pcount = port_count(item);
                     let idx_run = idx.clone();
                     let idx_remove = idx.clone();
 
@@ -61,6 +70,7 @@ pub fn TargetList(props: TargetListProps) -> Element {
                             class: "flex items-center gap-2 border border-input-border rounded px-3 py-2 bg-input-bg",
                             span { class: "text-sm font-mono flex-1 text-foreground", "{target}" }
                             Badge { variant: BadgeVariant::Primary, "{preset_label}" }
+                            span { class: "text-[10px] text-muted-foreground font-mono", ":{pcount}" }
                             span { class: "text-xs font-mono {indicator_cls}", "{dot} {label}" }
                             Button {
                                 variant: ButtonVariant::Icon,
