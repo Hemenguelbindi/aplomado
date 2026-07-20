@@ -1,7 +1,7 @@
-use petgraph::visit::{IntoEdgeReferences, IntoNodeReferences, EdgeRef};
-use std::collections::HashMap;
 use crate::topology::graph::{EdgeKind, NodeSeverity, TopologyGraph};
 use crate::topology::state::{LayoutType, SizeMode};
+use petgraph::visit::{EdgeRef, IntoEdgeReferences, IntoNodeReferences};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
 pub struct LayoutNode {
@@ -92,7 +92,12 @@ impl GraphLayout {
     }
 
     /// Compute layout with specified algorithm.
-    pub fn compute_with_type(&mut self, iterations: usize, layout_type: LayoutType, size_mode: SizeMode) {
+    pub fn compute_with_type(
+        &mut self,
+        iterations: usize,
+        layout_type: LayoutType,
+        size_mode: SizeMode,
+    ) {
         if self.nodes.is_empty() {
             return;
         }
@@ -133,7 +138,9 @@ impl GraphLayout {
             let row = i / cols;
             let col = i % cols;
             node.x = margin + (self.width - 2.0 * margin) * (col as f64 / (cols as f64).max(1.0));
-            node.y = margin + (self.height - 2.0 * margin) * (row as f64 / ((n as usize / cols.max(1)).max(1) as f64).max(1.0));
+            node.y = margin
+                + (self.height - 2.0 * margin)
+                    * (row as f64 / ((n as usize / cols.max(1)).max(1) as f64).max(1.0));
             node.vx = 0.0;
             node.vy = 0.0;
         }
@@ -227,9 +234,17 @@ impl GraphLayout {
         }
 
         let min_x = self.nodes.iter().map(|n| n.x).fold(f64::INFINITY, f64::min);
-        let max_x = self.nodes.iter().map(|n| n.x).fold(f64::NEG_INFINITY, f64::max);
+        let max_x = self
+            .nodes
+            .iter()
+            .map(|n| n.x)
+            .fold(f64::NEG_INFINITY, f64::max);
         let min_y = self.nodes.iter().map(|n| n.y).fold(f64::INFINITY, f64::min);
-        let max_y = self.nodes.iter().map(|n| n.y).fold(f64::NEG_INFINITY, f64::max);
+        let max_y = self
+            .nodes
+            .iter()
+            .map(|n| n.y)
+            .fold(f64::NEG_INFINITY, f64::max);
 
         let range_x = (max_x - min_x).max(1.0);
         let range_y = (max_y - min_y).max(1.0);
@@ -269,8 +284,10 @@ impl GraphLayout {
             }
 
             // Compute center of this cluster
-            let cx: f64 = indices.iter().map(|&i| self.nodes[i].x).sum::<f64>() / indices.len() as f64;
-            let cy: f64 = indices.iter().map(|&i| self.nodes[i].y).sum::<f64>() / indices.len() as f64;
+            let cx: f64 =
+                indices.iter().map(|&i| self.nodes[i].x).sum::<f64>() / indices.len() as f64;
+            let cy: f64 =
+                indices.iter().map(|&i| self.nodes[i].y).sum::<f64>() / indices.len() as f64;
             cluster_centers.push((cx, cy));
         }
 
@@ -280,7 +297,7 @@ impl GraphLayout {
         }
 
         // Shift nodes 5% toward their cluster center
-        for (i, node) in self.nodes.iter_mut().enumerate() {
+        for node in self.nodes.iter_mut() {
             if let Some(cluster_id) = node.cluster_id {
                 if let Some(&(cx, cy)) = cluster_centers.get(cluster_id) {
                     let pull = 0.05;

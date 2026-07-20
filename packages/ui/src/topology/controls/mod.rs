@@ -5,15 +5,14 @@
 
 use dioxus::prelude::*;
 
-use crate::topology::state::use_topology_context;
 use crate::models::HostInfo;
+use crate::topology::state::use_topology_context;
 
 mod sections;
 use sections::{
-    compute_os_values, compute_present_severities, compute_service_counts,
-    render_layout_selector, render_legend, render_os_filter,
-    render_port_filter, render_reset_buttons, render_search_filter,
-    render_severity_filter, render_view_options,
+    compute_os_values, compute_present_severities, compute_service_counts, render_layout_selector,
+    render_legend, render_os_filter, render_port_filter, render_reset_buttons,
+    render_search_filter, render_severity_filter, render_view_options,
 };
 
 #[derive(Props, Clone, PartialEq)]

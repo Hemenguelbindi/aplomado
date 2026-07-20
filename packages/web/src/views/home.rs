@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
-use ui::HomeView;
 use ui::models::HostInfo;
+use ui::HomeView;
 use ui::ScanStatusUi;
 
 #[component]

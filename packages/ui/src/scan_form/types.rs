@@ -1,4 +1,4 @@
-use crate::models::{ScanTarget, ScanTargetItem, ScanPreset, Session};
+use crate::models::{ScanPreset, ScanTarget, ScanTargetItem, Session};
 use dioxus::prelude::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -8,18 +8,16 @@ pub struct ScanConfigUi {
     pub fast_mode: bool,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum ScanStatusUi {
+    #[default]
     Idle,
-    Scanning { current: u32, total: u32 },
+    Scanning {
+        current: u32,
+        total: u32,
+    },
     Done(u32),
     Error(String),
-}
-
-impl Default for ScanStatusUi {
-    fn default() -> Self {
-        Self::Idle
-    }
 }
 
 #[derive(Props, Clone, PartialEq)]
@@ -42,10 +40,19 @@ pub fn get_ports_for_target(item: &ScanTargetItem) -> Vec<u16> {
 pub fn build_scan_config(targets: &[ScanTargetItem]) -> Option<ScanConfigUi> {
     let first = targets.first()?;
     let ports = get_ports_for_target(first);
-    if ports.is_empty() { return None; }
-    let parsed: Vec<ScanTarget> = targets.iter()
+    if ports.is_empty() {
+        return None;
+    }
+    let parsed: Vec<ScanTarget> = targets
+        .iter()
         .filter_map(|t| super::parse_target(&t.target))
         .collect();
-    if parsed.is_empty() { return None; }
-    Some(ScanConfigUi { targets: parsed, ports, fast_mode: true })
+    if parsed.is_empty() {
+        return None;
+    }
+    Some(ScanConfigUi {
+        targets: parsed,
+        ports,
+        fast_mode: true,
+    })
 }

@@ -1,7 +1,7 @@
-use dioxus::prelude::*;
-use std::collections::HashSet;
 use crate::topology::graph::NodeSeverity;
 use crate::topology::layout::LayoutNode;
+use dioxus::prelude::*;
+use std::collections::HashSet;
 
 /// Render SVG nodes (circles) with labels, selection rings, and click hit areas.
 pub fn render_nodes(
@@ -61,7 +61,7 @@ pub fn render_nodes(
                 "none".to_string()
             };
 
-            let on_sel = on_select_host.clone();
+            let on_sel = on_select_host;
 
             rsx! {
                 g {

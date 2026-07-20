@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
-use crate::models::PortInfo;
 use super::port_item::PortItem;
+use crate::models::PortInfo;
 
 #[component]
 pub fn PortList(ports: Vec<PortInfo>) -> Element {

@@ -57,6 +57,8 @@ pub fn build_scan_record(
                                 cvss_score: c.cvss_score,
                                 fixed_version: c.fixed_version.clone(),
                                 advisory_url: c.advisory_url.clone(),
+                                confidence: c.confidence.clone(),
+                                method: c.method.clone(),
                             })
                             .collect(),
                     })

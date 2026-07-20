@@ -53,7 +53,11 @@ async fn read_banner(stream: &mut TcpStream) -> Option<String> {
         .and_then(|n| {
             if n > 0 {
                 let text = String::from_utf8_lossy(&buf[..n]).trim().to_string();
-                if text.is_empty() { None } else { Some(text) }
+                if text.is_empty() {
+                    None
+                } else {
+                    Some(text)
+                }
             } else {
                 None
             }
@@ -89,8 +93,8 @@ async fn http_banner(host: &str, port: u16) -> Option<String> {
 async fn https_banner(host: &str, port: u16) -> Option<String> {
     #[cfg(feature = "rustls")]
     {
-        use tokio_rustls::TlsConnector;
         use rustls::ClientConfig;
+        use tokio_rustls::TlsConnector;
 
         ensure_crypto_provider();
 

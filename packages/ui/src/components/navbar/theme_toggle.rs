@@ -1,27 +1,25 @@
+use crate::components::{Icon, IconName, IconSize};
 use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct ThemeToggleProps {
-    /// Callback fired when the user clicks the theme toggle button.
     pub on_theme_toggle: EventHandler<()>,
 }
 
-/// A round button that toggles between dark (☀) and light (☾) theme icons.
 #[component]
 pub fn ThemeToggle(props: ThemeToggleProps) -> Element {
     let theme_name = crate::theme::use_theme_name();
-    let theme_icon = if theme_name() == "dark" {
-        "\u{2600}" // ☀
+    let icon = if theme_name() == "dark" {
+        IconName::Sun
     } else {
-        "\u{263E}" // ☾
+        IconName::Moon
     };
 
     rsx! {
         button {
-            class: "flex items-center justify-center w-8 h-8 rounded-full cursor-pointer transition-colors duration-200",
-            style: "background: var(--color-border); color: var(--color-text-secondary); border: none;",
+            class: "flex items-center justify-center w-8 h-8 rounded-full bg-border text-muted-foreground border-none cursor-pointer transition-colors duration-200 hover:text-foreground",
             onclick: move |_| props.on_theme_toggle.call(()),
-            "{theme_icon}"
+            Icon { name: icon, size: IconSize::Sm }
         }
     }
 }

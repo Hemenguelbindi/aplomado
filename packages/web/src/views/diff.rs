@@ -1,5 +1,5 @@
+use aplomado_core::history::{diff_scans, ScanDiff, ScanRecord};
 use dioxus::prelude::*;
-use aplomado_core::history::{ScanDiff, ScanRecord, diff_scans};
 use ui::components::EmptyState;
 use ui::helpers::format_datetime;
 
@@ -361,11 +361,18 @@ fn SummaryCard(label: String, value: String, color: String) -> Element {
 #[component]
 fn HostBadge(ip: String, variant: String) -> Element {
     let (bg, dot) = match variant.as_str() {
-        "added" => ("background: rgba(63,185,80,0.15); border: 1px solid rgba(63,185,80,0.3);",
-                    "🟢"),
-        "removed" => ("background: rgba(248,81,73,0.15); border: 1px solid rgba(248,81,73,0.3);",
-                      "🔴"),
-        _ => ("background: var(--color-surface); border: 1px solid var(--color-border);", "⚪"),
+        "added" => (
+            "background: rgba(63,185,80,0.15); border: 1px solid rgba(63,185,80,0.3);",
+            "🟢",
+        ),
+        "removed" => (
+            "background: rgba(248,81,73,0.15); border: 1px solid rgba(248,81,73,0.3);",
+            "🔴",
+        ),
+        _ => (
+            "background: var(--color-surface); border: 1px solid var(--color-border);",
+            "⚪",
+        ),
     };
 
     rsx! {

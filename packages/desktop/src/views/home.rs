@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use ui::{HomeView, models::HostInfo, ScanStatusUi};
+use ui::{models::HostInfo, HomeView, ScanStatusUi};
 
 #[component]
 pub fn Home() -> Element {

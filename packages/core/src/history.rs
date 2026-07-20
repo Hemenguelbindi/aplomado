@@ -46,6 +46,10 @@ pub struct StoredCveSummary {
     pub fixed_version: Option<String>,
     #[serde(default)]
     pub advisory_url: Option<String>,
+    #[serde(default)]
+    pub confidence: String,
+    #[serde(default)]
+    pub method: String,
 }
 
 // ---- Diff types ----
@@ -120,7 +124,10 @@ pub fn diff_scans(a: &ScanRecord, b: &ScanRecord) -> ScanDiff {
     }
 
     // Hosts present in both — compare ports and CVEs
-    let hosts_unchanged = a_hosts.keys().filter(|ip| b_hosts.contains_key(*ip)).count();
+    let hosts_unchanged = a_hosts
+        .keys()
+        .filter(|ip| b_hosts.contains_key(*ip))
+        .count();
 
     for ip in a_hosts.keys().filter(|ip| b_hosts.contains_key(*ip)) {
         let a_host = a_hosts[ip];
@@ -232,8 +239,7 @@ pub fn diff_scans(a: &ScanRecord, b: &ScanRecord) -> ScanDiff {
 pub fn save_scan(record: &ScanRecord) -> std::io::Result<()> {
     #[cfg(feature = "database")]
     {
-        crate::database::save_scan(record)
-            .map_err(|e| std::io::Error::other(e.to_string()))?;
+        crate::database::save_scan(record).map_err(|e| std::io::Error::other(e.to_string()))?;
         return Ok(());
     }
     #[cfg(not(feature = "database"))]
@@ -272,8 +278,7 @@ pub fn load_last_scan() -> Option<ScanRecord> {
 pub fn delete_scan(id: &str) -> std::io::Result<()> {
     #[cfg(feature = "database")]
     {
-        crate::database::delete_scan(id)
-            .map_err(|e| std::io::Error::other(e.to_string()))
+        crate::database::delete_scan(id).map_err(|e| std::io::Error::other(e.to_string()))
     }
     #[cfg(not(feature = "database"))]
     {
@@ -294,6 +299,8 @@ impl From<StoredCveSummary> for aplomado_types::CveSummary {
             cvss_score: s.cvss_score,
             fixed_version: s.fixed_version,
             advisory_url: s.advisory_url,
+            confidence: s.confidence,
+            method: s.method,
         }
     }
 }
@@ -390,6 +397,8 @@ mod tests {
             cvss_score: 0.0,
             fixed_version: None,
             advisory_url: None,
+            confidence: String::new(),
+            method: String::new(),
         }
     }
 
@@ -417,10 +426,13 @@ mod tests {
     #[test]
     fn one_new_host_shows_in_hosts_added() {
         let a = make_scan("a", vec![host("10.0.0.1", true, vec![])]);
-        let b = make_scan("b", vec![
-            host("10.0.0.1", true, vec![]),
-            host("10.0.0.2", true, vec![]),
-        ]);
+        let b = make_scan(
+            "b",
+            vec![
+                host("10.0.0.1", true, vec![]),
+                host("10.0.0.2", true, vec![]),
+            ],
+        );
         let d = diff_scans(&a, &b);
 
         assert_eq!(d.hosts_added, vec!["10.0.0.2".to_string()]);
@@ -430,10 +442,13 @@ mod tests {
 
     #[test]
     fn one_removed_host_shows_in_hosts_removed() {
-        let a = make_scan("a", vec![
-            host("10.0.0.1", true, vec![]),
-            host("10.0.0.2", true, vec![]),
-        ]);
+        let a = make_scan(
+            "a",
+            vec![
+                host("10.0.0.1", true, vec![]),
+                host("10.0.0.2", true, vec![]),
+            ],
+        );
         let b = make_scan("b", vec![host("10.0.0.1", true, vec![])]);
         let d = diff_scans(&a, &b);
 
@@ -474,11 +489,7 @@ mod tests {
             true,
             vec![port(80, "apache", Some("2.4"))],
         )];
-        let hosts_b = vec![host(
-            "10.0.0.1",
-            true,
-            vec![port(80, "nginx", Some("2.4"))],
-        )];
+        let hosts_b = vec![host("10.0.0.1", true, vec![port(80, "nginx", Some("2.4"))])];
         let a = make_scan("a", hosts_a);
         let b = make_scan("b", hosts_b);
         let d = diff_scans(&a, &b);
@@ -577,17 +588,23 @@ mod tests {
 
     #[test]
     fn multiple_hosts_added_and_removed() {
-        let a = make_scan("a", vec![
-            host("10.0.0.1", true, vec![]),
-            host("10.0.0.2", true, vec![]),
-            host("10.0.0.3", true, vec![]),
-        ]);
-        let b = make_scan("b", vec![
-            host("10.0.0.2", true, vec![]),
-            host("10.0.0.3", true, vec![]),
-            host("10.0.0.4", true, vec![]),
-            host("10.0.0.5", true, vec![]),
-        ]);
+        let a = make_scan(
+            "a",
+            vec![
+                host("10.0.0.1", true, vec![]),
+                host("10.0.0.2", true, vec![]),
+                host("10.0.0.3", true, vec![]),
+            ],
+        );
+        let b = make_scan(
+            "b",
+            vec![
+                host("10.0.0.2", true, vec![]),
+                host("10.0.0.3", true, vec![]),
+                host("10.0.0.4", true, vec![]),
+                host("10.0.0.5", true, vec![]),
+            ],
+        );
         let d = diff_scans(&a, &b);
 
         assert_eq!(d.hosts_added.len(), 2);
@@ -615,6 +632,8 @@ mod tests {
                     cvss_score: 7.5,
                     fixed_version: None,
                     advisory_url: None,
+                    confidence: String::new(),
+                    method: String::new(),
                 },
                 StoredCveSummary {
                     id: "CVE-2024-0002".into(),
@@ -622,6 +641,8 @@ mod tests {
                     cvss_score: 5.0,
                     fixed_version: None,
                     advisory_url: None,
+                    confidence: String::new(),
+                    method: String::new(),
                 },
                 StoredCveSummary {
                     id: "CVE-2024-0003".into(),
@@ -629,6 +650,8 @@ mod tests {
                     cvss_score: 9.8,
                     fixed_version: None,
                     advisory_url: None,
+                    confidence: String::new(),
+                    method: String::new(),
                 },
             ],
         };

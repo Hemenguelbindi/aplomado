@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 
-/// Варианты бейджа по цвету
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum BadgeVariant {
+    #[default]
     Default,
     Primary,
     Success,
@@ -11,28 +11,13 @@ pub enum BadgeVariant {
     Info,
 }
 
-impl Default for BadgeVariant {
-    fn default() -> Self { BadgeVariant::Default }
-}
-
-/// Размеры бейджа
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum BadgeSize {
+    #[default]
     Sm,
     Md,
 }
 
-impl Default for BadgeSize {
-    fn default() -> Self { BadgeSize::Sm }
-}
-
-/// Переиспользуемый бейдж для отображения статусов и меток.
-///
-/// # Пример
-/// ```ignore
-/// Badge { variant: BadgeVariant::Error, "Critical" }
-/// Badge { variant: BadgeVariant::Success, size: BadgeSize::Md, "Alive" }
-/// ```
 #[derive(Props, Clone, PartialEq)]
 pub struct BadgeProps {
     #[props(default)]
@@ -53,13 +38,13 @@ pub fn Badge(props: BadgeProps) -> Element {
         BadgeSize::Md => "px-3 py-1 text-sm",
     };
 
-    let variant_style = match props.variant {
-        BadgeVariant::Default => "background: var(--color-border); color: var(--color-text-secondary)",
-        BadgeVariant::Primary => "background: var(--color-surface); color: var(--color-primary)",
-        BadgeVariant::Success => "background: var(--color-surface); color: var(--color-success)",
-        BadgeVariant::Warning => "background: var(--color-surface); color: var(--color-warning)",
-        BadgeVariant::Error => "background: rgba(248,81,73,0.15); color: var(--color-severity-critical)",
-        BadgeVariant::Info => "background: var(--color-surface); color: var(--color-severity-medium)",
+    let variant_class = match props.variant {
+        BadgeVariant::Default => "bg-border text-muted-foreground",
+        BadgeVariant::Primary => "bg-primary/10 text-primary",
+        BadgeVariant::Success => "bg-success/10 text-success",
+        BadgeVariant::Warning => "bg-warning/10 text-warning",
+        BadgeVariant::Error => "bg-danger/15 text-danger",
+        BadgeVariant::Info => "bg-info/10 text-info",
     };
 
     let pulse_class = if props.pulse { "animate-pulse" } else { "" };
@@ -67,8 +52,7 @@ pub fn Badge(props: BadgeProps) -> Element {
 
     rsx! {
         span {
-            class: "inline-flex items-center rounded-full font-medium {size_class} {pulse_class} {extra_class}",
-            style: "{variant_style}",
+            class: "inline-flex items-center rounded-full font-medium {size_class} {variant_class} {pulse_class} {extra_class}",
             {props.children}
         }
     }

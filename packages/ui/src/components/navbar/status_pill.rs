@@ -1,6 +1,6 @@
-use dioxus::prelude::*;
 use crate::helpers::pluralize;
 use crate::scan_form::ScanStatusUi;
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct StatusPillProps {
@@ -22,16 +22,8 @@ pub fn StatusPill(props: StatusPillProps) -> Element {
             pluralize(*count as usize, "хост", "хоста", "хостов"),
             "",
         ),
-        ScanStatusUi::Error(msg) => (
-            "background: var(--color-error)",
-            msg.clone(),
-            "",
-        ),
-        ScanStatusUi::Idle => (
-            "background: var(--color-success)",
-            "Ready".into(),
-            "",
-        ),
+        ScanStatusUi::Error(msg) => ("background: var(--color-error)", msg.clone(), ""),
+        ScanStatusUi::Idle => ("background: var(--color-success)", "Ready".into(), ""),
     };
 
     rsx! {

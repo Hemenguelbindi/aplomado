@@ -7,11 +7,11 @@ pub fn pluralize(
 ) -> String {
     let last_two = count % 100;
     let last_one = count % 10;
-    let word = if last_two >= 11 && last_two <= 20 {
+    let word = if (11..=20).contains(&last_two) {
         genitive_plural
     } else if last_one == 1 {
         singular
-    } else if last_one >= 2 && last_one <= 4 {
+    } else if (2..=4).contains(&last_one) {
         genitive_singular
     } else {
         genitive_plural

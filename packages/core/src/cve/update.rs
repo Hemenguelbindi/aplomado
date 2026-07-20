@@ -1,3 +1,5 @@
+#![allow(non_snake_case, dead_code)]
+
 use crate::cve::client::{save_cve_db, CPE_MAPPING};
 use crate::cve::database::{CveDatabase, CveSeverity};
 
@@ -16,10 +18,7 @@ pub async fn update_cve_from_sources(path: &std::path::Path) -> Result<CveDataba
     // Используем CPE_MAPPING из client.rs — единый источник истины
     for (service, cpes) in CPE_MAPPING {
         for cpe in *cpes {
-            let url = format!(
-                "https://cve.circl.lu/api/vulnerability/cpesearch/{}",
-                cpe
-            );
+            let url = format!("https://cve.circl.lu/api/vulnerability/cpesearch/{}", cpe);
             match client.get(&url).send().await {
                 Ok(resp) if resp.status().is_success() => {
                     let body_text = resp.text().await.unwrap_or_default();
@@ -39,10 +38,7 @@ pub async fn update_cve_from_sources(path: &std::path::Path) -> Result<CveDataba
                             }
                         }
                         Err(e) => {
-                            let preview: String = body_text
-                                .chars()
-                                .take(200)
-                                .collect();
+                            let preview: String = body_text.chars().take(200).collect();
                             eprintln!(
                                 "[aplomado] Warning: failed to parse CIRCL response for {}: {} — body preview: {:?}",
                                 cpe, e, preview
@@ -108,10 +104,7 @@ fn fixes_to_db_inner(fixes: &[VulnerabilityFixInner]) -> CveDatabase {
 }
 
 /// Распарсить одну CVE 5.0 запись в набор VulnerabilityFixInner.
-fn parse_cve_record(
-    record: &CirclCveRecord,
-    service: &str,
-) -> Option<Vec<VulnerabilityFixInner>> {
+fn parse_cve_record(record: &CirclCveRecord, service: &str) -> Option<Vec<VulnerabilityFixInner>> {
     let meta = &record.cveMetadata;
     let cve_id = meta.cveId.as_str();
     let containers = &record.containers;
@@ -133,10 +126,7 @@ fn parse_cve_record(
     let severity_str = CveSeverity::from_cvss(cvss_score).as_str().to_string();
 
     // Advisory URL
-    let advisory_url = cna
-        .references
-        .first()
-        .map(|r| r.url.clone());
+    let advisory_url = cna.references.first().map(|r| r.url.clone());
 
     // Affected versions
     let mut fixes = Vec::new();
@@ -148,17 +138,20 @@ fn parse_cve_record(
                 Some(v.version.clone())
             };
 
-            let (version_end, fixed_ver, end_including) = if !v.lessThanOrEqual.is_empty()
-                && v.lessThanOrEqual != "*"
-            {
-                // lessThanOrEqual: "2.4.67" → affected <= 2.4.67, fix is next
-                (Some(v.lessThanOrEqual.clone()), Some(v.lessThanOrEqual.clone()), true)
-            } else if !v.lessThan.is_empty() && v.lessThan != "*" {
-                // lessThan: "2.4.68" → affected < 2.4.68, fix is 2.4.68
-                (Some(v.lessThan.clone()), Some(v.lessThan.clone()), false)
-            } else {
-                (None, None, true)
-            };
+            let (version_end, fixed_ver, end_including) =
+                if !v.lessThanOrEqual.is_empty() && v.lessThanOrEqual != "*" {
+                    // lessThanOrEqual: "2.4.67" → affected <= 2.4.67, fix is next
+                    (
+                        Some(v.lessThanOrEqual.clone()),
+                        Some(v.lessThanOrEqual.clone()),
+                        true,
+                    )
+                } else if !v.lessThan.is_empty() && v.lessThan != "*" {
+                    // lessThan: "2.4.68" → affected < 2.4.68, fix is 2.4.68
+                    (Some(v.lessThan.clone()), Some(v.lessThan.clone()), false)
+                } else {
+                    (None, None, true)
+                };
 
             fixes.push(VulnerabilityFixInner {
                 cve_id: cve_id.to_string(),

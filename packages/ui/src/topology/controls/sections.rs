@@ -46,9 +46,7 @@ fn active_btn_style(is_active: bool) -> &'static str {
 
 // ─── Search ─────────────────────────────────────────────────────────────────
 
-pub fn render_search_filter(
-    mut search_query: Signal<String>,
-) -> Element {
+pub fn render_search_filter(mut search_query: Signal<String>) -> Element {
     let has_query = !search_query().is_empty();
 
     rsx! {
@@ -83,9 +81,7 @@ pub fn render_search_filter(
 
 // ─── Layout Type ────────────────────────────────────────────────────────────
 
-pub fn render_layout_selector(
-    mut layout_type: Signal<LayoutType>,
-) -> Element {
+pub fn render_layout_selector(mut layout_type: Signal<LayoutType>) -> Element {
     let current = layout_type();
 
     rsx! {
@@ -121,9 +117,7 @@ pub fn render_layout_selector(
 
 // ─── Severity Filter ────────────────────────────────────────────────────────
 
-pub fn render_severity_filter(
-    mut filter_severity: Signal<Vec<NodeSeverity>>,
-) -> Element {
+pub fn render_severity_filter(mut filter_severity: Signal<Vec<NodeSeverity>>) -> Element {
     let active = filter_severity();
 
     rsx! {
@@ -179,10 +173,7 @@ pub fn render_severity_filter(
 
 // ─── OS Filter ──────────────────────────────────────────────────────────────
 
-pub fn render_os_filter(
-    mut filter_os: Signal<Vec<String>>,
-    os_values: Vec<String>,
-) -> Element {
+pub fn render_os_filter(mut filter_os: Signal<Vec<String>>, os_values: Vec<String>) -> Element {
     if os_values.is_empty() {
         return rsx! {};
     }
@@ -415,9 +406,7 @@ pub fn render_view_options(
 
 // ─── Legend ─────────────────────────────────────────────────────────────────
 
-pub fn render_legend(
-    present_severities: Vec<NodeSeverity>,
-) -> Element {
+pub fn render_legend(present_severities: Vec<NodeSeverity>) -> Element {
     rsx! {
         div {
             style: "margin-bottom: 10px;",

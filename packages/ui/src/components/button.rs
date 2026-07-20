@@ -1,8 +1,9 @@
 use dioxus::prelude::*;
 
 /// Визуальные варианты кнопки
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum ButtonVariant {
+    #[default]
     Primary,
     Secondary,
     Danger,
@@ -10,20 +11,13 @@ pub enum ButtonVariant {
     Icon,
 }
 
-impl Default for ButtonVariant {
-    fn default() -> Self { ButtonVariant::Primary }
-}
-
 /// Размеры кнопки
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum ButtonSize {
     Sm,
+    #[default]
     Md,
     Lg,
-}
-
-impl Default for ButtonSize {
-    fn default() -> Self { ButtonSize::Md }
 }
 
 /// Переиспользуемая кнопка с поддержкой вариантов и размеров.
@@ -61,11 +55,19 @@ pub fn Button(props: ButtonProps) -> Element {
     };
 
     let variant_style = match props.variant {
-        ButtonVariant::Primary => "background: var(--color-primary); color: var(--color-text-primary)",
-        ButtonVariant::Secondary => "background: var(--color-border); color: var(--color-text-secondary)",
-        ButtonVariant::Danger => "background: var(--color-danger); color: var(--color-text-primary)",
+        ButtonVariant::Primary => {
+            "background: var(--color-primary); color: var(--color-text-primary)"
+        }
+        ButtonVariant::Secondary => {
+            "background: var(--color-border); color: var(--color-text-secondary)"
+        }
+        ButtonVariant::Danger => {
+            "background: var(--color-danger); color: var(--color-text-primary)"
+        }
         ButtonVariant::Ghost => "background: transparent; color: var(--color-text-muted)",
-        ButtonVariant::Icon => "background: transparent; color: var(--color-text-muted); padding: 0.25rem",
+        ButtonVariant::Icon => {
+            "background: transparent; color: var(--color-text-muted); padding: 0.25rem"
+        }
     };
 
     let extra_class = props.class.as_deref().unwrap_or("");

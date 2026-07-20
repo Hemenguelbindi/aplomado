@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use crate::topology::graph::NodeSeverity;
+use dioxus::prelude::*;
 
 /// Layout algorithm selection.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

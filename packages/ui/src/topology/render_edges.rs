@@ -1,6 +1,6 @@
+use crate::topology::layout::{LayoutEdge, LayoutNode};
 use dioxus::prelude::*;
 use std::collections::HashSet;
-use crate::topology::layout::{LayoutEdge, LayoutNode};
 
 /// Render SVG lines for all edges between nodes.
 pub fn render_edges<'a>(

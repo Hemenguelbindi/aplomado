@@ -1,5 +1,5 @@
-use crate::models::PortInfo;
 use crate::components::EmptyState;
+use crate::models::PortInfo;
 use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]

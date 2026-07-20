@@ -1,7 +1,10 @@
 use clap::Parser;
 use dioxus::prelude::*;
-use ui::{models::{HostInfo, Session, SessionStatus}, Navbar, ScanStatusUi, ThemeProvider};
-use views::{Dashboard, Home, Scan, History};
+use ui::{
+    models::{HostInfo, Session, SessionStatus},
+    Navbar, ScanStatusUi, ThemeProvider,
+};
+use views::{Dashboard, History, Home, Scan};
 
 mod views;
 
@@ -21,9 +24,7 @@ enum Cli {
 
     /// Сканировать из CLI (без GUI)
     #[command(name = "scan")]
-    Scan {
-        targets: Vec<String>,
-    },
+    Scan { targets: Vec<String> },
 
     /// Показать историю
     #[command(name = "list")]
@@ -204,7 +205,13 @@ fn run_cli_scan(targets: &[String]) {
             let ips: Vec<std::net::IpAddr> = if let Ok(ip) = target_str.parse() {
                 vec![ip]
             } else if target_str.contains('/') {
-                aplomado_core::scanner::expand_cidr(target_str)
+                match aplomado_core::scanner::expand_cidr(target_str) {
+                    Ok(ips) => ips,
+                    Err(e) => {
+                        eprintln!("  CIDR expansion failed: {e}");
+                        continue;
+                    }
+                }
             } else {
                 match (target_str.as_str(), 0).to_socket_addrs() {
                     Ok(addrs) => addrs.map(|a| a.ip()).collect(),
@@ -216,9 +223,14 @@ fn run_cli_scan(targets: &[String]) {
             };
 
             for ip in &ips {
-                let host = aplomado_core::scanner::engine::scan_single_target(*ip, ui::COMMON_PORTS, None).await;
+                let host =
+                    aplomado_core::scanner::engine::scan_single_target(*ip, ui::COMMON_PORTS, None)
+                        .await;
                 let status = if host.alive { "ALIVE" } else { "DOWN" };
-                println!("{ip}\t{status}\t{}", host.os_guess.as_deref().unwrap_or("?"));
+                println!(
+                    "{ip}\t{status}\t{}",
+                    host.os_guess.as_deref().unwrap_or("?")
+                );
                 for p in &host.ports {
                     let ver = p.service_version.as_deref().unwrap_or("");
                     let banner = p.banner.as_deref().unwrap_or("");
@@ -235,8 +247,10 @@ fn show_history() {
         println!("No scan history found.");
         return;
     }
-    println!("{:<36} {:<30} {:>6} {:>6} {:>6} {:>6}",
-        "ID", "Targets", "Hosts", "Alive", "Ports", "Time");
+    println!(
+        "{:<36} {:<30} {:>6} {:>6} {:>6} {:>6}",
+        "ID", "Targets", "Hosts", "Alive", "Ports", "Time"
+    );
     println!("{}", "-".repeat(100));
     for r in &records {
         let targets = r.targets.join(", ");
@@ -245,7 +259,8 @@ fn show_history() {
         } else {
             targets
         };
-        println!("{:<36} {:<30} {:>6} {:>6} {:>6} {:>5}s",
+        println!(
+            "{:<36} {:<30} {:>6} {:>6} {:>6} {:>5}s",
             &r.id[..36.min(r.id.len())],
             short_targets,
             r.hosts_total,
@@ -278,7 +293,8 @@ fn show_scan_details(id: Option<String>, last: bool) {
             println!();
             for h in &r.hosts {
                 let status = if h.alive { "ALIVE" } else { "DOWN" };
-                println!("  {} ({}) [{status}]",
+                println!(
+                    "  {} ({}) [{status}]",
                     h.ip,
                     h.hostname.as_deref().unwrap_or("?"),
                 );
@@ -310,10 +326,8 @@ fn export_report(id: Option<String>, last: bool, format: &str) {
 
     match record {
         Some(r) => {
-            let output = std::path::Path::new("aplomado-report")
-                .with_extension(fmt.extension());
-            aplomado_core::export::save_report(r, fmt, &output)
-                .expect("Failed to save report");
+            let output = std::path::Path::new("aplomado-report").with_extension(fmt.extension());
+            aplomado_core::export::save_report(r, fmt, &output).expect("Failed to save report");
             println!("Report saved: {}", output.display());
         }
         None => eprintln!("Scan not found."),

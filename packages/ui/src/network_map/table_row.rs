@@ -1,6 +1,7 @@
+use super::types::{count_cves, cve_badge_color, cve_badge_text};
+use crate::components::{Icon, IconName, IconSize};
 use crate::models::HostInfo;
 use dioxus::prelude::*;
-use super::types::{count_cves, cve_badge_color, cve_badge_text};
 
 #[derive(Props, Clone, PartialEq)]
 pub struct TableRowProps {
@@ -18,39 +19,33 @@ pub fn TableRow(props: TableRowProps) -> Element {
     let ports_str = if host.ports.is_empty() {
         "—".to_string()
     } else {
-        host.ports.iter().map(|p| p.port.to_string()).collect::<Vec<_>>().join(", ")
+        host.ports
+            .iter()
+            .map(|p| p.port.to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
     };
     let cve_stats = count_cves(host);
     let cve_str = cve_badge_text(&cve_stats);
     let cve_color = cve_badge_color(&cve_stats);
     let alive_cls = if host.alive { "" } else { "opacity-40" };
-    let sel_bg = if props.selected { "var(--color-surface-hover)" } else { "transparent" };
+    let sel_bg = if props.selected {
+        "bg-surface-muted"
+    } else {
+        ""
+    };
     let ip_clone = ip.clone();
 
     rsx! {
         tr {
             key: "{ip}",
-            class: "border-b cursor-pointer {alive_cls}",
-            style: "border-color: var(--color-border); background: {sel_bg}",
+            class: "border-b border-border cursor-pointer {alive_cls} {sel_bg} hover:bg-surface-muted/30",
             onclick: move |_| props.on_select.call(ip_clone.clone()),
-            td {
-                class: "py-2 px-3 font-mono",
-                style: "color: var(--color-text-primary)",
-                "{ip}"
-            }
-            td {
-                class: "py-2 px-3",
-                style: "color: var(--color-text-secondary)",
-                "{hostname}"
-            }
-            td {
-                class: "py-2 px-3",
-                style: "color: var(--color-text-secondary)",
-                "{os}"
-            }
-            td {
-                class: "py-2 px-3 font-mono text-xs",
-                style: "color: var(--color-text-secondary); word-break: break-all; overflow-wrap: break-word; max-width: 200px",
+            td { class: "py-2 px-3 font-mono text-foreground", "{ip}" }
+            td { class: "py-2 px-3 text-muted-foreground", "{hostname}" }
+            td { class: "py-2 px-3 text-muted-foreground", "{os}" }
+            td { class: "py-2 px-3 font-mono text-xs text-muted-foreground",
+                style: "word-break: break-all; overflow-wrap: break-word; max-width: 200px",
                 "{ports_str}"
             }
             td { class: "py-2 px-3 text-xs font-mono",
@@ -58,11 +53,11 @@ pub fn TableRow(props: TableRowProps) -> Element {
             }
             td { class: "py-2 px-3",
                 span {
-                    class: "text-xs px-1.5 py-0.5 rounded cursor-pointer select-all",
-                    style: "color: var(--color-text-muted)",
+                    class: "text-xs px-1.5 py-0.5 rounded cursor-pointer select-all text-muted-foreground",
                     title: "IP для копирования",
                     onclick: move |e: Event<MouseData>| e.stop_propagation(),
-                    "📋 {ip}"
+                    Icon { name: IconName::Copy, size: IconSize::Sm }
+                    " {ip}"
                 }
             }
         }

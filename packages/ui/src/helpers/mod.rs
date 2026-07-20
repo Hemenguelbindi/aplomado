@@ -8,4 +8,4 @@ mod session;
 pub use session::{build_scan_record, create_default_session, targets_to_strings};
 
 mod scan_orchestrator;
-pub use scan_orchestrator::{handle_scan_success, handle_scan_failure, mark_targets_scanning};
+pub use scan_orchestrator::{handle_scan_failure, handle_scan_success, mark_targets_scanning};

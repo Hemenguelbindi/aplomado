@@ -1,17 +1,17 @@
-use dioxus::prelude::*;
-use web_time::Instant;
 use crate::models::HostInfo;
 use crate::theme::use_theme;
-use crate::topology::graph::build_topology;
-use crate::topology::layout::GraphLayout;
-use crate::topology::state::{LayoutType, SizeMode, provide_topology_context};
-use crate::topology::filter::compute_filtered_hosts;
-use crate::topology::tooltip::TopologyTooltip;
-use crate::topology::host_panel::HostDetailPanel;
+use crate::topology::canvas::SvgCanvas;
 use crate::topology::controls::TopologyControls;
 use crate::topology::controls_panel::ControlsPanel;
-use crate::topology::canvas::SvgCanvas;
+use crate::topology::filter::compute_filtered_hosts;
+use crate::topology::graph::build_topology;
+use crate::topology::layout::GraphLayout;
+use crate::topology::state::{provide_topology_context, LayoutType, SizeMode};
 use crate::topology::svg_helpers::{compute_connected_ids, compute_visible_bounds, visible_count};
+use crate::topology::tooltip::TopologyTooltip;
+use crate::HostDetailPanel;
+use dioxus::prelude::*;
+use web_time::Instant;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct TopologyViewProps {
@@ -45,9 +45,12 @@ pub fn TopologyView(props: TopologyViewProps) -> Element {
 
     let subnet_groups = use_memo(move || {
         let nodes = &layout.read().nodes;
-        let mut cluster_map: std::collections::HashMap<usize, Vec<usize>> = std::collections::HashMap::new();
+        let mut cluster_map: std::collections::HashMap<usize, Vec<usize>> =
+            std::collections::HashMap::new();
         for (i, node) in nodes.iter().enumerate() {
-            if let Some(cid) = node.cluster_id { cluster_map.entry(cid).or_default().push(i); }
+            if let Some(cid) = node.cluster_id {
+                cluster_map.entry(cid).or_default().push(i);
+            }
         }
         crate::topology::svg_helpers::compute_subnet_groups(cluster_map, nodes, 20.0)
     });
@@ -64,31 +67,56 @@ pub fn TopologyView(props: TopologyViewProps) -> Element {
     let mut pan_x = ctx.pan_x;
     let mut pan_y = ctx.pan_y;
     let mut dragging = use_signal(|| false);
-    let transition_style = if dragging() { "none".to_string() } else { "transform 0.05s".to_string() };
-    let cursor_style = if dragging() { "grabbing".to_string() } else { "grab".to_string() };
+    let transition_style = if dragging() {
+        "none".to_string()
+    } else {
+        "transform 0.05s".to_string()
+    };
+    let cursor_style = if dragging() {
+        "grabbing".to_string()
+    } else {
+        "grab".to_string()
+    };
     let mut drag_start = use_signal(|| (0.0f64, 0.0f64));
     let mut pan_start = use_signal(|| (0.0f64, 0.0f64));
     let mut last_zoom_time = use_signal(Instant::now);
     let mut last_pan_time = use_signal(Instant::now);
 
     let all_hosts = props.hosts.clone();
-    let tooltip_host = hovered_ip.as_ref().and_then(|ip| all_hosts.iter().find(|h| h.ip.to_string() == *ip).cloned());
-    let panel_host = selected_ip.as_ref().and_then(|ip| all_hosts.iter().find(|h| h.ip.to_string() == *ip).cloned());
+    let tooltip_host = hovered_ip
+        .as_ref()
+        .and_then(|ip| all_hosts.iter().find(|h| h.ip.to_string() == *ip).cloned());
+    let panel_host = selected_ip
+        .as_ref()
+        .and_then(|ip| all_hosts.iter().find(|h| h.ip.to_string() == *ip).cloned());
 
     let col = &theme.colors;
     let (cc, ch, cm, cl, cu, cp) = (
-        col.severity_critical.clone(), col.severity_high.clone(), col.severity_medium.clone(),
-        col.severity_low.clone(), col.severity_unknown.clone(), col.primary.clone(),
+        col.severity_critical.clone(),
+        col.severity_high.clone(),
+        col.severity_medium.clone(),
+        col.severity_low.clone(),
+        col.severity_unknown.clone(),
+        col.primary.clone(),
     );
 
     let zoom_val = zoom();
     let pan_x_val = pan_x();
     let pan_y_val = pan_y();
-    let cull_bounds = compute_visible_bounds(pan_x_val, pan_y_val, zoom_val, layout_width, layout_height, 80, nodes.len());
-    let (vmin_x, vmax_x, vmin_y, vmax_y) = cull_bounds.unwrap_or((-1000.0, 1000.0, -1000.0, 1000.0));
+    let cull_bounds = compute_visible_bounds(
+        pan_x_val,
+        pan_y_val,
+        zoom_val,
+        layout_width,
+        layout_height,
+        80,
+        nodes.len(),
+    );
+    let (vmin_x, vmax_x, vmin_y, vmax_y) =
+        cull_bounds.unwrap_or((-1000.0, 1000.0, -1000.0, 1000.0));
     let use_culling = cull_bounds.is_some();
     let node_vis_count = visible_count(&nodes, cull_bounds);
-    let on_sel = props.on_select_host.clone();
+    let on_sel = props.on_select_host;
 
     rsx! {
         div {
@@ -141,7 +169,7 @@ pub fn TopologyView(props: TopologyViewProps) -> Element {
                 use_culling, visible_min_x: vmin_x, visible_max_x: vmax_x,
                 visible_min_y: vmin_y, visible_max_y: vmax_y,
                 selected_host: ctx.selected_host, hovered_host: ctx.hovered_host,
-                on_select_host: on_sel.clone(),
+                on_select_host: on_sel,
             }
 
             TopologyControls {
@@ -163,7 +191,11 @@ pub fn TopologyView(props: TopologyViewProps) -> Element {
             }
 
             TopologyTooltip { host: tooltip_host, pos: (ctx.hover_pos)(), visible: (ctx.hovered_host)().is_some() }
-            HostDetailPanel { host: panel_host, on_close: move |_| { ctx.selected_host.set(None); } }
+            if let Some(host) = panel_host {
+                div { class: "mt-4 border rounded-lg p-4 border-border bg-surface",
+                    HostDetailPanel { host, on_close: move |_| { ctx.selected_host.set(None); } }
+                }
+            }
         }
     }
 }

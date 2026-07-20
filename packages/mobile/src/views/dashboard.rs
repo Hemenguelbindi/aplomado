@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use ui::{DashboardView, models::HostInfo, ScanStatusUi};
+use ui::{models::HostInfo, DashboardView, ScanStatusUi};
 
 #[component]
 pub fn Dashboard() -> Element {

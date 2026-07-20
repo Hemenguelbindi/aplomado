@@ -26,10 +26,13 @@ pub fn compute_filtered_hosts(hosts: &[HostInfo], ctx: &TopologyContext) -> Vec<
     };
     let port_has_other = filter_services.iter().any(|s| s == "__other__");
 
-    hosts.iter()
+    hosts
+        .iter()
         .filter(|h| h.alive)
         .filter(|h| {
-            if severity_filter.is_empty() { return true; }
+            if severity_filter.is_empty() {
+                return true;
+            }
             let crit_ports = [22, 23, 135, 139, 445, 3389, 3306, 5432, 6379, 27017];
             let has_crit = h.ports.iter().any(|p| crit_ports.contains(&p.port));
             let sev = if has_crit {
@@ -42,24 +45,34 @@ pub fn compute_filtered_hosts(hosts: &[HostInfo], ctx: &TopologyContext) -> Vec<
             severity_filter.contains(&sev)
         })
         .filter(|h| {
-            if os_filter.is_empty() { return true; }
+            if os_filter.is_empty() {
+                return true;
+            }
             match h.os_guess {
                 Some(ref os) => os_filter.contains(os),
                 None => false,
             }
         })
         .filter(|h| {
-            if !port_filter_enabled || filter_services.is_empty() { return true; }
+            if !port_filter_enabled || filter_services.is_empty() {
+                return true;
+            }
             h.ports.iter().any(|p| {
-                if filter_services.contains(&p.service_name) { return true; }
+                if filter_services.contains(&p.service_name) {
+                    return true;
+                }
                 port_has_other && !top_service_names.contains(&p.service_name)
             })
         })
-        .filter(|h| { !only_cve || h.ports.iter().any(|p| !p.cves.is_empty()) })
+        .filter(|h| !only_cve || h.ports.iter().any(|p| !p.cves.is_empty()))
         .filter(|h| {
-            if query.is_empty() { return true; }
+            if query.is_empty() {
+                return true;
+            }
             let ip_match = h.ip.to_string().to_lowercase().contains(&query);
-            let host_match = h.hostname.as_ref()
+            let host_match = h
+                .hostname
+                .as_ref()
                 .map(|hn| hn.to_lowercase().contains(&query))
                 .unwrap_or(false);
             ip_match || host_match

@@ -3,7 +3,6 @@
 //! Все типы перенесены в `aplomado-types` — единый источник истины.
 
 pub use aplomado_types::{
-    ScanTarget, HostInfo, PortInfo, TransportProto, PortState, ScanResult, Hop,
-    CveSummary,
-    extract_version, extract_version_num,
+    extract_version, extract_version_num, CveSummary, Hop, HostInfo, PortInfo, PortState,
+    ScanResult, ScanTarget, TransportProto,
 };

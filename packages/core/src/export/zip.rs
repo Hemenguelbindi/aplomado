@@ -30,11 +30,7 @@ pub fn save_reports_zip(records: &[ScanRecord], output_path: &Path) -> std::io::
         let txt = export_txt(record);
 
         let base_name = sanitize_filename(&record.id);
-        for (ext, content) in [
-            ("html", &html),
-            ("json", &json),
-            ("txt", &txt),
-        ] {
+        for (ext, content) in [("html", &html), ("json", &json), ("txt", &txt)] {
             let entry_path = format!("{base_name}.{ext}");
             zip_writer.start_file(&entry_path, options).map_err(|e| {
                 std::io::Error::new(std::io::ErrorKind::Other, format!("ZIP entry error: {e}"))

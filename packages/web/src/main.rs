@@ -1,6 +1,9 @@
 use dioxus::prelude::*;
-use ui::{models::{HostInfo, Session}, Navbar, ScanStatusUi, ThemeProvider};
-use views::{Dashboard, Home, Scan, History, Diff};
+use ui::{
+    models::{HostInfo, Session},
+    Navbar, ScanStatusUi, ThemeProvider,
+};
+use views::{Dashboard, Diff, History, Home, Scan};
 
 mod views;
 
@@ -31,9 +34,7 @@ fn App() -> Element {
     let scan_results = use_signal(Vec::<HostInfo>::new);
     let scan_status = use_signal(|| ScanStatusUi::Idle);
     let history = use_signal(aplomado_core::history::load_history);
-    let current_session = use_signal(|| {
-        None::<Session>
-    });
+    let current_session = use_signal(|| None::<Session>);
 
     {
         let mut sess = current_session;

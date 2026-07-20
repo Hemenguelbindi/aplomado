@@ -1,10 +1,14 @@
-use dioxus::prelude::*;
 use crate::components::{Button, ButtonVariant};
 use crate::models::ScanPreset;
+use dioxus::prelude::*;
 
 pub const ALL_PRESETS: &[ScanPreset] = &[
-    ScanPreset::Quick, ScanPreset::Standard, ScanPreset::Full,
-    ScanPreset::Vulnerability, ScanPreset::Cameras, ScanPreset::Custom,
+    ScanPreset::Quick,
+    ScanPreset::Standard,
+    ScanPreset::Full,
+    ScanPreset::Vulnerability,
+    ScanPreset::Cameras,
+    ScanPreset::Custom,
 ];
 
 #[derive(Props, Clone, PartialEq)]

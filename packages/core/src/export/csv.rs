@@ -22,13 +22,7 @@ pub fn export_csv(records: &[ScanRecord]) -> String {
                 if host.ports.is_empty() {
                     csv.push_str(&format!(
                         "{},{},{},{},{},{},{},,,,,,,,\n",
-                        record.id,
-                        timestamp,
-                        target_escaped,
-                        host.ip,
-                        hostname,
-                        os,
-                        alive,
+                        record.id, timestamp, target_escaped, host.ip, hostname, os, alive,
                     ));
                 } else {
                     for port in &host.ports {

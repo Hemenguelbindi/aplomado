@@ -11,7 +11,8 @@ chrono = { version = "0.4", features = ["serde"] }
 aplomado-core = { workspace = true, optional = true }
 uuid = { workspace = true }
 aplomado-types = { workspace = true }
-tokio = { version = "1", features = ["rt", "net", "time"], optional = true }
+tokio = { version = "1", features = ["rt", "net", "time", "sync"], optional = true }
+futures = { version = "0.3", optional = true }
 
 [features]
-server = ["dioxus/server", "aplomado-core", "aplomado-core/scanner", "aplomado-core/fingerprint", "aplomado-core/database", "aplomado-core/cve-client", "tokio"]
+server = ["dioxus/server", "aplomado-core", "aplomado-core/scanner", "aplomado-core/fingerprint", "aplomado-core/database", "aplomado-core/cve-client", "tokio", "futures"]

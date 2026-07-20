@@ -26,7 +26,7 @@
 |-----------|--------|--------|
 | **Desktop** (Linux/macOS/Windows) | ✅ Готово | `cargo run --bin aplomado -- run` |
 | **Web** | ✅ Готово | `dx serve` в `packages/web/` |
-| **Mobile** (Android/iOS) | ✅ Готово | `dx serve --platform android` |
+| **Mobile** (Android/iOS) | 🚧 Разработка | `dx serve --platform android` |
 
 ## Скриншоты
 
@@ -87,7 +87,7 @@ aplomado/
 ### Сборка и запуск Desktop
 
 ```bash
-git clone https://github.com/ваш-username/aplomado.git
+git clone https://github.com/anomalyco/aplomado.git
 cd aplomado
 cargo run --bin aplomado -- run
 ```
@@ -144,6 +144,12 @@ cargo test -p aplomado-core --test export_tests
 - **Tailwind CSS v4** — стилизация
 - **Clap** — CLI-аргументы (desktop)
 - **CIRCL CVE API** — база уязвимостей
+
+## Ограничения
+
+- **CVE Matching** — сопоставление выполняется на основе баннеров сервисов (версий). Это даёт **ложные срабатывания** (*false positives*) — реальная версия может отличаться от указанной в баннере. Всегда проверяйте результаты вручную.
+- **Traceroute** — использует UDP probe + ICMP listener. Не все сети пропускают ICMP Time Exceeded, и не все маршрутизаторы отвечают.
+- **Определение ОС** — эвристическое, по баннерам сервисов. Не является надёжным методом идентификации ОС.
 
 ## Лицензия
 

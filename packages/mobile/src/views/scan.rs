@@ -1,6 +1,10 @@
-use dioxus::prelude::*;
 use dioxus::core::Task;
-use ui::{models::{Session, SessionStatus}, ScanConfigUi, ScanForm, ScanStatusUi, NetworkMap, MapViewMode, HostDetailPanel, models::HostInfo};
+use dioxus::prelude::*;
+use ui::{
+    models::HostInfo,
+    models::{Session, SessionStatus},
+    HostDetailPanel, MapViewMode, NetworkMap, ScanConfigUi, ScanForm, ScanStatusUi,
+};
 
 #[component]
 pub fn Scan() -> Element {
@@ -44,7 +48,7 @@ pub fn Scan() -> Element {
                         let mut found = Vec::new();
 
                         for (i, target) in cfg.targets.iter().enumerate() {
-                            let ips = aplomado_core::scanner::resolve_targets(target);
+                            let ips = aplomado_core::scanner::resolve_targets(target).unwrap_or_default();
                             for ip in ips {
                                 status.set(ScanStatusUi::Scanning {
                                     current: (i + 1) as u32,

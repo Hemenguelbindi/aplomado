@@ -3,10 +3,9 @@
 //! В этом файле остаются только UI-специфичные типы.
 
 pub use aplomado_types::{
-    ScanTarget, HostInfo, PortInfo, Hop, CveSummary,
-    TransportProto, PortState, ScanResult,
-    extract_version, extract_version_num,
-    COMMON_PORTS, QUICK_PORTS, FULL_PORTS, VULN_PORTS, CAMERAS_PORTS,
+    extract_version, extract_version_num, CveSummary, Hop, HostInfo, PortInfo, PortState,
+    ScanResult, ScanTarget, TransportProto, CAMERAS_PORTS, COMMON_PORTS, FULL_PORTS, QUICK_PORTS,
+    VULN_PORTS,
 };
 
 /// Цель сканирования с конфигурацией (пресет/порты)

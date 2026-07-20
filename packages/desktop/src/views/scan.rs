@@ -1,10 +1,10 @@
+use aplomado_core::history::ScanRecord;
 use dioxus::prelude::*;
 use ui::{
     helpers::{create_default_session, handle_scan_success, targets_to_strings},
     models::{HostInfo, Session},
     ScanConfigUi, ScanStatusUi, ScanView,
 };
-use aplomado_core::history::ScanRecord;
 
 #[component]
 pub fn Scan() -> Element {
@@ -14,11 +14,13 @@ pub fn Scan() -> Element {
     let history = use_context::<Signal<Vec<ScanRecord>>>();
     let mut scan_task: Signal<Option<dioxus::core::Task>> = use_signal(|| None);
 
-    let session = current_session().and_then(|s| if s.id.is_empty() { None } else { Some(s) }).unwrap_or_else(|| {
-        let s = create_default_session();
-        current_session.set(Some(s.clone()));
-        s
-    });
+    let session = current_session()
+        .and_then(|s| if s.id.is_empty() { None } else { Some(s) })
+        .unwrap_or_else(|| {
+            let s = create_default_session();
+            current_session.set(Some(s.clone()));
+            s
+        });
 
     let session_for_view = session.clone();
 
@@ -41,7 +43,7 @@ pub fn Scan() -> Element {
                     let start_time = std::time::Instant::now();
 
                     for (i, target) in targets.iter().enumerate() {
-                        let ips = aplomado_core::scanner::resolve_targets(target);
+                        let ips = aplomado_core::scanner::resolve_targets(target).unwrap_or_default();
                         for ip in ips {
                             let current = (i + 1) as u32;
                             status.set(ScanStatusUi::Scanning { current, total });

@@ -47,7 +47,11 @@ fn make_record(id: &str) -> ScanRecord {
 }
 
 fn make_records() -> Vec<ScanRecord> {
-    vec![make_record("rec-001"), make_record("rec-002"), make_record("rec-003")]
+    vec![
+        make_record("rec-001"),
+        make_record("rec-002"),
+        make_record("rec-003"),
+    ]
 }
 
 // ── JSON multi-record tests ──────────────────────────────────────────────

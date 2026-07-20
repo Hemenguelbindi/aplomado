@@ -3,8 +3,8 @@
 
 pub mod scanner;
 
-pub mod history;
 pub mod export;
+pub mod history;
 
 #[cfg(feature = "scanner")]
 pub mod traceroute;

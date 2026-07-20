@@ -1,6 +1,6 @@
-use dioxus::prelude::*;
-use ui::{HistoryPage};
 use aplomado_core::history::ScanRecord;
+use dioxus::prelude::*;
+use ui::HistoryPage;
 
 #[component]
 pub fn History() -> Element {

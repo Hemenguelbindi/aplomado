@@ -7,9 +7,7 @@ static CVE_DB: OnceLock<std::sync::RwLock<CveDatabase>> = OnceLock::new();
 /// Инициализировать глобальную CVE базу из SQLite.
 pub fn init_cve_db(path: &std::path::Path) {
     let db = crate::cve::client::load_cve_db(path);
-    CVE_DB
-        .set(std::sync::RwLock::new(db))
-        .ok();
+    CVE_DB.set(std::sync::RwLock::new(db)).ok();
 }
 
 /// Получить чтение из глобальной CVE базы.

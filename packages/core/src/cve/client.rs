@@ -72,20 +72,19 @@ fn load_all_fixes(path: &Path) -> Vec<VulnerabilityFix> {
         Ok(s) => s,
         Err(_) => return vec![],
     };
-    let fixes = stmt
-        .query_map([], |row| {
-            Ok(VulnerabilityFix {
-                cve_id: row.get(0)?,
-                package_name: row.get(1)?,
-                affected_version_start: row.get(2)?,
-                affected_version_end: row.get(3)?,
-                fixed_version: row.get(4)?,
-                advisory_url: row.get(5)?,
-                severity: row.get(6)?,
-                cvss_score: row.get(7)?,
-                description: row.get(8)?,
-            })
-        });
+    let fixes = stmt.query_map([], |row| {
+        Ok(VulnerabilityFix {
+            cve_id: row.get(0)?,
+            package_name: row.get(1)?,
+            affected_version_start: row.get(2)?,
+            affected_version_end: row.get(3)?,
+            fixed_version: row.get(4)?,
+            advisory_url: row.get(5)?,
+            severity: row.get(6)?,
+            cvss_score: row.get(7)?,
+            description: row.get(8)?,
+        })
+    });
     match fixes {
         Ok(rows) => rows.filter_map(|r| r.ok()).collect(),
         Err(_) => vec![],
@@ -162,26 +161,20 @@ fn database_to_fixes(db: &CveDatabase) -> Vec<VulnerabilityFix> {
     db.entries
         .iter()
         .map(|entry| {
-            let start = entry
-                .affected_versions
-                .first()
-                .and_then(|r| {
-                    if r.start.is_empty() {
-                        None
-                    } else {
-                        Some(r.start.clone())
-                    }
-                });
-            let end = entry
-                .affected_versions
-                .first()
-                .and_then(|r| {
-                    if r.end.is_empty() {
-                        None
-                    } else {
-                        Some(r.end.clone())
-                    }
-                });
+            let start = entry.affected_versions.first().and_then(|r| {
+                if r.start.is_empty() {
+                    None
+                } else {
+                    Some(r.start.clone())
+                }
+            });
+            let end = entry.affected_versions.first().and_then(|r| {
+                if r.end.is_empty() {
+                    None
+                } else {
+                    Some(r.end.clone())
+                }
+            });
             VulnerabilityFix {
                 cve_id: entry.id.clone(),
                 package_name: entry.package_name.clone(),
@@ -239,10 +232,7 @@ pub const CPE_MAPPING: &[(&str, &[&str])] = &[
     ("pop3", &["cpe:2.3:a:cyrus:pop3d"]),
     (
         "smtp",
-        &[
-            "cpe:2.3:a:postfix:postfix",
-            "cpe:2.3:a:exim:exim",
-        ],
+        &["cpe:2.3:a:postfix:postfix", "cpe:2.3:a:exim:exim"],
     ),
     (
         "http-proxy",
@@ -253,17 +243,11 @@ pub const CPE_MAPPING: &[(&str, &[&str])] = &[
     ),
     (
         "https-alt",
-        &[
-            "cpe:2.3:a:apache:http_server",
-            "cpe:2.3:a:nginx:nginx",
-        ],
+        &["cpe:2.3:a:apache:http_server", "cpe:2.3:a:nginx:nginx"],
     ),
     (
         "http-alt",
-        &[
-            "cpe:2.3:a:apache:http_server",
-            "cpe:2.3:a:nginx:nginx",
-        ],
+        &["cpe:2.3:a:apache:http_server", "cpe:2.3:a:nginx:nginx"],
     ),
 ];
 

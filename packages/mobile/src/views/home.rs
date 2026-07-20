@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use ui::{NetworkMap, MapViewMode, HostDetailPanel, models::HostInfo};
+use ui::{models::HostInfo, HostDetailPanel, MapViewMode, NetworkMap};
 
 #[component]
 pub fn Home() -> Element {

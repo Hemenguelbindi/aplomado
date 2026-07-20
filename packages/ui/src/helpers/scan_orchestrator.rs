@@ -2,8 +2,8 @@
 //!
 //! Вынесены из платформенных view-файлов (web, desktop) для устранения дублирования.
 
-use dioxus::prelude::{ReadableExt, Signal, WritableExt};
 use aplomado_core::history::ScanRecord;
+use dioxus::prelude::{ReadableExt, Signal, WritableExt};
 
 use crate::helpers::session::build_scan_record;
 use crate::models::{HostInfo, Session, SessionStatus, TargetStatus};

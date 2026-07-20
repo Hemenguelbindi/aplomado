@@ -1,6 +1,6 @@
-use dioxus::prelude::*;
-use crate::components::{TextInput, Button, ButtonVariant};
+use crate::components::{Button, ButtonVariant, TextInput};
 use crate::models::Session;
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct SessionNameProps {

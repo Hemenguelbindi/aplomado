@@ -1,10 +1,3 @@
-//! Ping sweep — проверка доступности хоста.
-//!
-//! Используем TCP connect ping (не ICMP — требует root).
-//! Пробуем подключиться на порты 80, 443, 22, 53.
-//! Если хотя бы один ответил — хост жив.
-//! Все порты проверяются параллельно для ускорения.
-
 use std::net::IpAddr;
 use std::time::Duration;
 use tokio::net::TcpStream;
@@ -12,29 +5,41 @@ use tokio::net::TcpStream;
 const PROBE_PORTS: &[u16] = &[80, 443, 22, 53, 8080, 8443];
 const PING_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Проверить, жив ли хост (параллельный TCP connect к популярным портам)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HostReachability {
+    Alive,
+    PortClosed,
+    NoResponse,
+}
+
 pub async fn is_alive(ip: IpAddr) -> bool {
-    let futs = PROBE_PORTS.iter().map(|&port| async move {
-        tokio::time::timeout(PING_TIMEOUT, TcpStream::connect((ip, port)))
-            .await
-            .ok()
-            .and_then(|r| r.ok())
-            .is_some()
-    });
-
-    futures::future::join_all(futs)
-        .await
-        .into_iter()
-        .any(|alive| alive)
+    probe_host(ip).await != HostReachability::NoResponse
 }
 
-/// Проверить хост через конкретный порт (быстрее если порт известен)
-pub async fn is_alive_on_port(ip: IpAddr, port: u16) -> bool {
-    tokio::time::timeout(PING_TIMEOUT, TcpStream::connect((ip, port)))
-        .await
-        .ok()
-        .and_then(|r| r.ok())
-        .is_some()
+pub async fn probe_host(ip: IpAddr) -> HostReachability {
+    let futs = PROBE_PORTS.iter().map(|&port| probe_port(ip, port));
+    let results: Vec<HostReachability> = futures::future::join_all(futs).await;
+    if results.iter().any(|r| *r == HostReachability::Alive) {
+        HostReachability::Alive
+    } else if results.iter().any(|r| *r == HostReachability::PortClosed) {
+        HostReachability::PortClosed
+    } else {
+        HostReachability::NoResponse
+    }
 }
 
-// TODO: ICMP ping через socket2 (требует CAP_NET_RAW или root)
+pub async fn probe_port(ip: IpAddr, port: u16) -> HostReachability {
+    match tokio::time::timeout(PING_TIMEOUT, TcpStream::connect((ip, port))).await {
+        Ok(Ok(_)) => HostReachability::Alive,
+        Ok(Err(e)) => {
+            if let std::io::ErrorKind::ConnectionRefused | std::io::ErrorKind::ConnectionReset =
+                e.kind()
+            {
+                HostReachability::PortClosed
+            } else {
+                HostReachability::NoResponse
+            }
+        }
+        Err(_) => HostReachability::NoResponse,
+    }
+}

@@ -1,23 +1,44 @@
+use super::table_row::TableRow;
+use super::types::count_cves;
 use crate::helpers::pluralize;
 use crate::models::HostInfo;
 use dioxus::prelude::*;
-use super::types::count_cves;
-use super::table_row::TableRow;
 
 #[derive(Clone, Copy, PartialEq)]
-enum SortColumn { Ip, Hostname, Os, Ports, Cve }
+enum SortColumn {
+    Ip,
+    Hostname,
+    Os,
+    Ports,
+    Cve,
+}
 
 #[derive(Clone, Copy, PartialEq)]
-enum SortDir { Asc, Desc }
+enum SortDir {
+    Asc,
+    Desc,
+}
 
 fn toggle_sort(col: SortColumn, mut sc: Signal<SortColumn>, mut sd: Signal<SortDir>) {
-    if sc() == col { sd.set(match sd() { SortDir::Asc => SortDir::Desc, _ => SortDir::Asc }); }
-    else { sc.set(col); sd.set(SortDir::Asc); }
+    if sc() == col {
+        sd.set(match sd() {
+            SortDir::Asc => SortDir::Desc,
+            _ => SortDir::Asc,
+        });
+    } else {
+        sc.set(col);
+        sd.set(SortDir::Asc);
+    }
 }
 
 fn arrow(col: SortColumn, cur: SortColumn, dir: SortDir) -> &'static str {
-    if cur != col { return ""; }
-    match dir { SortDir::Asc => " ^", SortDir::Desc => " v" }
+    if cur != col {
+        return "";
+    }
+    match dir {
+        SortDir::Asc => " ^",
+        SortDir::Desc => " v",
+    }
 }
 
 fn sort_val(h: &HostInfo, col: SortColumn) -> String {
@@ -35,8 +56,16 @@ fn sort_val(h: &HostInfo, col: SortColumn) -> String {
 
 fn matches_q(h: &HostInfo, q: &str) -> bool {
     h.ip.to_string().to_lowercase().contains(q)
-        || h.hostname.as_deref().unwrap_or("").to_lowercase().contains(q)
-        || h.os_guess.as_deref().unwrap_or("").to_lowercase().contains(q)
+        || h.hostname
+            .as_deref()
+            .unwrap_or("")
+            .to_lowercase()
+            .contains(q)
+        || h.os_guess
+            .as_deref()
+            .unwrap_or("")
+            .to_lowercase()
+            .contains(q)
 }
 
 #[derive(Props, Clone, PartialEq)]
@@ -53,14 +82,26 @@ pub fn TableView(props: TableViewProps) -> Element {
     let sort_col = use_signal(|| SortColumn::Ip);
     let sort_dir = use_signal(|| SortDir::Asc);
     let q = search().to_lowercase();
-    let filtered: Vec<HostInfo> = if q.is_empty() { props.hosts.clone() }
-        else { props.hosts.iter().filter(|h| matches_q(h, &q)).cloned().collect() };
+    let filtered: Vec<HostInfo> = if q.is_empty() {
+        props.hosts.clone()
+    } else {
+        props
+            .hosts
+            .iter()
+            .filter(|h| matches_q(h, &q))
+            .cloned()
+            .collect()
+    };
 
-    let sc = sort_col(); let sd = sort_dir();
+    let sc = sort_col();
+    let sd = sort_dir();
     let mut sorted = filtered;
     sorted.sort_by(|a, b| {
         let cmp = sort_val(a, sc).cmp(&sort_val(b, sc));
-        match sd { SortDir::Asc => cmp, SortDir::Desc => cmp.reverse() }
+        match sd {
+            SortDir::Asc => cmp,
+            SortDir::Desc => cmp.reverse(),
+        }
     });
 
     let count_label = pluralize(sorted.len(), "хост", "хоста", "хостов");

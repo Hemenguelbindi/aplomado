@@ -1,6 +1,6 @@
-use dioxus::prelude::*;
-use crate::components::navbar::*;
+use crate::components::{navbar::*, Icon, IconName, IconSize};
 use crate::scan_form::ScanStatusUi;
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct NavbarProps {
@@ -20,8 +20,7 @@ pub fn Navbar(props: NavbarProps) -> Element {
     let menu_open = use_signal(|| false);
     rsx! {
         div {
-            class: "relative flex items-center justify-between px-4 py-3 border-b",
-            style: "background: var(--color-surface); border-color: var(--color-border);",
+            class: "relative flex items-center justify-between px-4 py-3 border-b bg-surface border-border",
             Logo { }
             div { class: "relative",
                 NavLinks { menu_open, children: props.children }
@@ -31,9 +30,8 @@ pub fn Navbar(props: NavbarProps) -> Element {
                 StatusPill { scan_status: props.scan_status }
                 if props.vuln_count > 0 {
                     div {
-                        class: "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                        style: "background: rgba(248,81,73,0.15); color: var(--color-severity-critical);",
-                        span { "\u{26A0}" }
+                        class: "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-danger/15 text-danger",
+                        Icon { name: IconName::AlertTriangle, size: IconSize::Sm }
                         span { "{props.vuln_count}" }
                     }
                 }

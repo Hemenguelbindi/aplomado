@@ -1,34 +1,46 @@
+use aplomado_core::history::ScanRecord;
 use dioxus::prelude::*;
 use ui::{
-    helpers::{create_default_session, handle_scan_failure, handle_scan_success, mark_targets_scanning, targets_to_strings},
+    helpers::{
+        create_default_session, handle_scan_failure, handle_scan_success, mark_targets_scanning,
+        targets_to_strings,
+    },
     models::{HostInfo, Session},
     ScanConfigUi, ScanStatusUi, ScanView,
 };
-use aplomado_core::history::ScanRecord;
 
 fn count_target_hosts(targets: &[ui::models::ScanTarget]) -> u32 {
-    targets.iter().map(|t| match t {
-        ui::models::ScanTarget::Cidr(c) => aplomado_core::scanner::expand_cidr(c).len() as u32,
-        ui::models::ScanTarget::Ip(_) | ui::models::ScanTarget::Hostname(_) => 1,
-        ui::models::ScanTarget::Range(s, e) => {
-            aplomado_core::scanner::expand_range(&s.to_string(), &e.to_string()).len() as u32
-        }
-    }).sum()
+    targets
+        .iter()
+        .map(|t| match t {
+            ui::models::ScanTarget::Cidr(c) => aplomado_core::scanner::expand_cidr(c)
+                .map(|v| v.len() as u32)
+                .unwrap_or(0),
+            ui::models::ScanTarget::Ip(_) | ui::models::ScanTarget::Hostname(_) => 1,
+            ui::models::ScanTarget::Range(s, e) => {
+                aplomado_core::scanner::expand_range(&s.to_string(), &e.to_string())
+                    .map(|v| v.len() as u32)
+                    .unwrap_or(0)
+            }
+        })
+        .sum()
 }
 
 #[component]
 pub fn Scan() -> Element {
-let mut current_session = use_context::<Signal<Option<Session>>>();
+    let mut current_session = use_context::<Signal<Option<Session>>>();
     let mut status = use_context::<Signal<ScanStatusUi>>();
     let mut scan_results = use_context::<Signal<Vec<HostInfo>>>();
     let history = use_context::<Signal<Vec<ScanRecord>>>();
     let mut scan_task: Signal<Option<dioxus::core::Task>> = use_signal(|| None);
 
-    let session = current_session().and_then(|s| if s.id.is_empty() { None } else { Some(s) }).unwrap_or_else(|| {
-        let s = create_default_session();
-        current_session.set(Some(s.clone()));
-        s
-    });
+    let session = current_session()
+        .and_then(|s| if s.id.is_empty() { None } else { Some(s) })
+        .unwrap_or_else(|| {
+            let s = create_default_session();
+            current_session.set(Some(s.clone()));
+            s
+        });
 
     let session_for_view = session.clone();
 

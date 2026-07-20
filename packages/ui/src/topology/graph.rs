@@ -1,9 +1,9 @@
-use petgraph::stable_graph::{StableGraph, NodeIndex};
+use crate::models::HostInfo;
+use petgraph::stable_graph::{NodeIndex, StableGraph};
 use petgraph::Undirected;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::IpAddr;
-use crate::models::HostInfo;
-use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum NodeSeverity {
@@ -47,7 +47,7 @@ pub fn build_topology(hosts: &[HostInfo]) -> TopologyGraph {
 
     for host in hosts {
         let mut hops = host.route.clone();
-        hops.sort_by(|a, b| a.hop.cmp(&b.hop));
+        hops.sort_by_key(|a| a.hop);
 
         for window in hops.windows(2) {
             let prev = window[0].ip;
@@ -57,15 +57,30 @@ pub fn build_topology(hosts: &[HostInfo]) -> TopologyGraph {
             let next_idx = get_or_create_node(&mut graph, &mut node_map, next, host, window[1].hop);
 
             if !graph.contains_edge(prev_idx, next_idx) {
-                graph.add_edge(prev_idx, next_idx, EdgeInfo { weight: 1.0, kind: EdgeKind::Route });
+                graph.add_edge(
+                    prev_idx,
+                    next_idx,
+                    EdgeInfo {
+                        weight: 1.0,
+                        kind: EdgeKind::Route,
+                    },
+                );
             }
         }
 
         let target_idx = get_or_create_node(&mut graph, &mut node_map, host.ip, host, 0);
         if let Some(last_hop) = hops.last() {
-            let last_idx = get_or_create_node(&mut graph, &mut node_map, last_hop.ip, host, last_hop.hop);
+            let last_idx =
+                get_or_create_node(&mut graph, &mut node_map, last_hop.ip, host, last_hop.hop);
             if !graph.contains_edge(last_idx, target_idx) {
-                graph.add_edge(last_idx, target_idx, EdgeInfo { weight: 1.0, kind: EdgeKind::Route });
+                graph.add_edge(
+                    last_idx,
+                    target_idx,
+                    EdgeInfo {
+                        weight: 1.0,
+                        kind: EdgeKind::Route,
+                    },
+                );
             }
         }
     }

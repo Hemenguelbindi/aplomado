@@ -49,9 +49,9 @@ where
     let db = DB.get().ok_or_else(|| {
         Box::<dyn std::error::Error>::from("Database not initialized. Call init_db() first.")
     })?;
-    let conn = db.lock().map_err(|e| {
-        Box::<dyn std::error::Error>::from(format!("Database lock poisoned: {e}"))
-    })?;
+    let conn = db
+        .lock()
+        .map_err(|e| Box::<dyn std::error::Error>::from(format!("Database lock poisoned: {e}")))?;
     f(&conn)
 }
 
@@ -76,7 +76,7 @@ pub fn init_db() -> Result<(), Box<dyn std::error::Error>> {
             updated_at TEXT DEFAULT (datetime('now'))
         );
         CREATE INDEX IF NOT EXISTS idx_scans_created ON scans(created_at DESC);
-        CREATE INDEX IF NOT EXISTS idx_sessions_updated ON sessions(updated_at DESC);"
+        CREATE INDEX IF NOT EXISTS idx_sessions_updated ON sessions(updated_at DESC);",
     )?;
 
     // WAL mode for better concurrent access
@@ -108,9 +108,7 @@ pub fn load_last_scan() -> Result<Option<ScanRecord>, Box<dyn std::error::Error>
     init_db().ok();
 
     with_db(|conn| {
-        let mut stmt = conn.prepare(
-            "SELECT data FROM scans ORDER BY created_at DESC LIMIT 1"
-        )?;
+        let mut stmt = conn.prepare("SELECT data FROM scans ORDER BY created_at DESC LIMIT 1")?;
 
         let result = stmt.query_row([], |row| {
             let json: String = row.get(0)?;
@@ -137,9 +135,8 @@ pub fn load_history() -> Result<Vec<ScanRecord>, Box<dyn std::error::Error>> {
     init_db().ok();
 
     with_db(|conn| {
-        let mut stmt = conn.prepare(
-            "SELECT data FROM scans ORDER BY created_at DESC LIMIT 1000"
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT data FROM scans ORDER BY created_at DESC LIMIT 1000")?;
 
         let records = stmt.query_map([], |row| {
             let json: String = row.get(0)?;
@@ -175,9 +172,9 @@ pub fn delete_scan(id: &str) -> Result<(), Box<dyn std::error::Error>> {
 pub fn migrate_from_json() -> Result<(), Box<dyn std::error::Error>> {
     with_db(|conn| {
         // Проверить, есть ли уже записи в БД
-        let count: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM scans", [], |row| row.get(0)
-        ).unwrap_or(0);
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM scans", [], |row| row.get(0))
+            .unwrap_or(0);
 
         if count > 0 {
             return Ok(()); // уже есть данные, не мигрируем
@@ -260,9 +257,8 @@ pub fn list_sessions() -> Result<Vec<SessionData>, Box<dyn std::error::Error>> {
     init_db().ok();
 
     with_db(|conn| {
-        let mut stmt = conn.prepare(
-            "SELECT data FROM sessions ORDER BY updated_at DESC LIMIT 100"
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT data FROM sessions ORDER BY updated_at DESC LIMIT 100")?;
         let rows = stmt.query_map([], |row| {
             let json: String = row.get(0)?;
             let session: SessionData = serde_json::from_str(&json)

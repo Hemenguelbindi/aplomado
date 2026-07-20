@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use crate::topology::layout::LayoutEdge;
+use std::collections::HashSet;
 
 /// Bounding box for a subnet group rectangle.
 #[derive(Clone, Debug, PartialEq)]
@@ -55,7 +55,9 @@ pub fn compute_subnet_groups(
 
 /// Build a set of connected node IDs for highlighting (from + to).
 pub fn compute_connected_ids(edges: &[LayoutEdge], active_ip: Option<&str>) -> HashSet<String> {
-    let Some(ip) = active_ip else { return HashSet::new() };
+    let Some(ip) = active_ip else {
+        return HashSet::new();
+    };
     let mut set = HashSet::new();
     set.insert(ip.to_string());
     for edge in edges {

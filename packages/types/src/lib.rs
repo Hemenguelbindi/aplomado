@@ -76,6 +76,10 @@ pub struct CveSummary {
     pub fixed_version: Option<String>,
     #[serde(default)]
     pub advisory_url: Option<String>,
+    #[serde(default)]
+    pub confidence: String,
+    #[serde(default)]
+    pub method: String,
 }
 
 /// Information about a single open/closed/filtered port on a host.
@@ -141,9 +145,7 @@ pub fn extract_version(service: &str, banner: &str) -> Option<String> {
 /// Returns only the numeric portion (without service prefixes).
 pub fn extract_version_num(service: &str, banner: &str) -> Option<String> {
     match service {
-        "ssh" => {
-            banner.split('_').nth(1).map(|v| v.to_string())
-        }
+        "ssh" => banner.split('_').nth(1).map(|v| v.to_string()),
         "http" | "https" | "http-proxy" | "https-alt" | "http-alt" => {
             let s = if banner.to_lowercase().starts_with("server:") {
                 banner.trim_start_matches("Server:").trim()
@@ -152,21 +154,16 @@ pub fn extract_version_num(service: &str, banner: &str) -> Option<String> {
             };
             s.split('/').nth(1).map(|v| v.to_string())
         }
-        "ftp" => {
-            banner.split_whitespace()
-                .find(|s| s.chars().any(|c| c.is_ascii_digit()) && s.contains('.'))
-                .map(|v| v.to_string())
-        }
-        "mysql" => {
-            banner.strip_prefix("MySQL ").map(|v| v.to_string())
-        }
-        _ => {
-            banner
-                .split(|c: char| !c.is_ascii_digit() && c != '.')
-                .filter(|s| !s.is_empty())
-                .find(|s| s.chars().filter(|c| *c == '.').count() >= 1)
-                .map(|v| v.to_string())
-        }
+        "ftp" => banner
+            .split_whitespace()
+            .find(|s| s.chars().any(|c| c.is_ascii_digit()) && s.contains('.'))
+            .map(|v| v.to_string()),
+        "mysql" => banner.strip_prefix("MySQL ").map(|v| v.to_string()),
+        _ => banner
+            .split(|c: char| !c.is_ascii_digit() && c != '.')
+            .filter(|s| !s.is_empty())
+            .find(|s| s.chars().filter(|c| *c == '.').count() >= 1)
+            .map(|v| v.to_string()),
     }
 }
 
@@ -175,25 +172,23 @@ pub fn extract_version_num(service: &str, banner: &str) -> Option<String> {
 // ---------------------------------------------------------------------------
 
 pub const COMMON_PORTS: &[u16] = &[
-    21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 445, 993, 995,
-    1433, 1521, 2049, 3306, 3389, 5432, 5900, 6379, 8080, 8443, 9090, 9200, 27017,
+    21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 445, 993, 995, 1433, 1521, 2049, 3306,
+    3389, 5432, 5900, 6379, 8080, 8443, 9090, 9200, 27017,
 ];
 
 pub const QUICK_PORTS: &[u16] = &[22, 80, 443, 8080, 3389];
 
 pub const FULL_PORTS: &[u16] = &[
-    21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 445, 993, 995,
-    1433, 1521, 2049, 3306, 3389, 5432, 5900, 6379, 8080, 8443, 9090,
-    9200, 27017, 8888, 9999, 10000, 2082, 2083, 2087, 2096,
-    3000, 5000, 8000, 9300, 27018, 27019,
+    21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 445, 993, 995, 1433, 1521, 2049, 3306,
+    3389, 5432, 5900, 6379, 8080, 8443, 9090, 9200, 27017, 8888, 9999, 10000, 2082, 2083, 2087,
+    2096, 3000, 5000, 8000, 9300, 27018, 27019,
 ];
 
 pub const VULN_PORTS: &[u16] = &[
-    21, 22, 23, 25, 80, 110, 135, 139, 143, 443, 445, 993, 995,
-    1433, 3306, 3389, 5432, 5900, 6379, 8080, 8443, 9200, 27017,
+    21, 22, 23, 25, 80, 110, 135, 139, 143, 443, 445, 993, 995, 1433, 3306, 3389, 5432, 5900, 6379,
+    8080, 8443, 9200, 27017,
 ];
 
 pub const CAMERAS_PORTS: &[u16] = &[
-    80, 443, 554, 8000, 34567, 37777, 37778,
-    8080, 8443, 8554, 8899, 7070, 9000, 21,
+    80, 443, 554, 8000, 34567, 37777, 37778, 8080, 8443, 8554, 8899, 7070, 9000, 21,
 ];

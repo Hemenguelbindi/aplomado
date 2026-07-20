@@ -1,16 +1,14 @@
 use crate::components::dashboard::{
     calculate_stats, CriticalAlertsCard, RecentScansTable, StatCard, TopServicesChart,
 };
-use crate::components::{Badge, BadgeVariant, Button, ButtonVariant, Card, EmptyState};
+use crate::components::{
+    Badge, BadgeVariant, Button, ButtonVariant, Card, EmptyState, Icon, IconName, IconSize, Tone,
+};
 use crate::helpers::pluralize;
 use crate::models::HostInfo;
 use crate::ScanStatusUi;
-use dioxus::prelude::*;
 use aplomado_core::history::ScanRecord;
-
-// ---------------------------------------------------------------------------
-// Props — unchanged
-// ---------------------------------------------------------------------------
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct DashboardViewProps {
@@ -22,21 +20,16 @@ pub struct DashboardViewProps {
     pub on_navigate_to_history: EventHandler<()>,
 }
 
-// ---------------------------------------------------------------------------
-// Main component — orchestrator
-// ---------------------------------------------------------------------------
-
 #[component]
 pub fn DashboardView(props: DashboardViewProps) -> Element {
     let stats = calculate_stats(&props.hosts, &props.history);
 
     rsx! {
         div { class: "p-8 max-w-7xl mx-auto",
-            // Header
             div { class: "flex items-center justify-between mb-8",
                 div {
-                    h1 { class: "text-2xl font-bold", style: "color: var(--color-text-primary)", "Панель управления" }
-                    p { class: "text-sm mt-1", style: "color: var(--color-text-muted)",
+                    h1 { class: "text-2xl font-bold text-foreground", "Панель управления" }
+                    p { class: "text-sm mt-1 text-muted-foreground",
                         if let Some(ref time) = stats.last_scan_time {
                             "Последнее сканирование: {time}"
                         } else {
@@ -47,47 +40,42 @@ pub fn DashboardView(props: DashboardViewProps) -> Element {
                 Button {
                     variant: ButtonVariant::Primary,
                     onclick: move |_| props.on_navigate_to_hosts.call(()),
-                    "Обзор сети"
+                    Icon { name: IconName::Hosts, size: IconSize::Sm }
+                    " Обзор сети"
                 }
             }
 
-            // Stats Cards
             div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8",
                 StatCard {
                     label: "Хосты".to_string(),
                     value: stats.alive_hosts.to_string(),
                     subtext: Some(format!("из {} обнаружено", stats.total_hosts)),
-                    icon: "🖥",
-                    icon_bg: "rgba(63,185,80,0.15)".to_string(),
+                    tone: Tone::Success,
+                    icon: IconName::Server,
                 }
                 StatCard {
                     label: "Открытые порты".to_string(),
                     value: stats.open_ports.to_string(),
-                    icon: "🔌",
-                    icon_bg: "rgba(88,166,255,0.15)".to_string(),
+                    tone: Tone::Info,
+                    icon: IconName::Activity,
                 }
                 StatCard {
                     label: "Уязвимости".to_string(),
                     value: stats.vuln_count.to_string(),
-                    icon: "🛡",
-                    icon_bg: if stats.vuln_count > 0 {
-                        "rgba(248,81,73,0.15)".to_string()
-                    } else {
-                        "rgba(63,185,80,0.15)".to_string()
-                    },
+                    tone: if stats.vuln_count > 0 { Tone::Danger } else { Tone::Success },
+                    icon: IconName::Shield,
                     danger: stats.vuln_count > 0,
                 }
                 StatCard {
                     label: "Последнее сканирование".to_string(),
-                    value: stats.alive_summary.clone().unwrap_or_else(|| "—".to_string()),
+                    value: stats.alive_summary.clone().unwrap_or_else(|| "\u{2014}".to_string()),
                     subtext: stats.ports_summary.clone(),
-                    icon: "📊",
-                    icon_bg: "rgba(139,148,158,0.15)".to_string(),
+                    tone: Tone::Neutral,
+                    icon: IconName::Clock,
                     large_value: false,
                 }
             }
 
-            // Quick Actions + Network Overview + Critical Alerts
             div { class: "grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8",
                 Card {
                     title: "Быстрые действия",
@@ -95,12 +83,14 @@ pub fn DashboardView(props: DashboardViewProps) -> Element {
                         Button {
                             variant: ButtonVariant::Primary,
                             onclick: move |_| props.on_navigate_to_scan.call(()),
-                            "🔍  Новое сканирование"
+                            Icon { name: IconName::Scan, size: IconSize::Sm }
+                            " Новое сканирование"
                         }
                         Button {
                             variant: ButtonVariant::Secondary,
                             onclick: move |_| props.on_navigate_to_history.call(()),
-                            "📋  История сканов"
+                            Icon { name: IconName::History, size: IconSize::Sm }
+                            " История сканов"
                         }
                     }
                 }
@@ -108,22 +98,22 @@ pub fn DashboardView(props: DashboardViewProps) -> Element {
                     title: "Обзор сети",
                     div { class: "space-y-4",
                         div {
-                            p { class: "text-sm mb-2", style: "color: var(--color-text-secondary)", "Хосты в сети" }
+                            p { class: "text-sm mb-2 text-muted-foreground", "Хосты в сети" }
                             div { class: "flex items-center gap-3",
-                                div { class: "flex-1 h-2 rounded-full overflow-hidden", style: "background: var(--color-border)",
+                                div { class: "flex-1 h-2 rounded-full overflow-hidden bg-border",
                                     div {
-                                        class: "h-full rounded-full",
-                                        style: "width: {stats.alive_pct}%; background: var(--color-success)"
+                                        class: "h-full rounded-full bg-success",
+                                        style: "width: {stats.alive_pct}%",
                                     }
                                 }
-                                span { class: "text-xs font-medium", style: "color: var(--color-text-muted)",
+                                span { class: "text-xs font-medium text-muted-foreground",
                                     "{stats.alive_hosts}/{stats.total_hosts}"
                                 }
                             }
                         }
                         if !props.hosts.is_empty() {
                             div {
-                                p { class: "text-sm mb-2", style: "color: var(--color-text-secondary)", "Популярные сервисы" }
+                                p { class: "text-sm mb-2 text-muted-foreground", "Популярные сервисы" }
                                 TopServicesChart { services: stats.top_services }
                             }
                         }
@@ -149,16 +139,13 @@ pub fn DashboardView(props: DashboardViewProps) -> Element {
                 CriticalAlertsCard { vulns: stats.critical_vulns }
             }
 
-            // Recent Scans
             if !stats.recent_scans.is_empty() {
                 RecentScansTable { scans: stats.recent_scans }
             }
 
-            // Empty State
             if props.hosts.is_empty() && props.history.is_empty() {
                 EmptyState {
-                    icon: "🦅",
-                    title: "APLOMADO — Панель управления",
+                    title: "APLOMADO \u{2014} Панель управления",
                     description: "Запустите первое сканирование сети, чтобы увидеть статистику и уведомления здесь.",
                 }
             }

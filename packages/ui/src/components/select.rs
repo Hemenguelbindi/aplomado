@@ -10,7 +10,11 @@ pub struct SelectOption {
 
 impl SelectOption {
     pub fn new(value: &str, label: &str) -> Self {
-        Self { value: value.to_string(), label: label.to_string(), disabled: false }
+        Self {
+            value: value.to_string(),
+            label: label.to_string(),
+            disabled: false,
+        }
     }
 }
 

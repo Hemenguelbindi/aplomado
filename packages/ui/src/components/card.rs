@@ -1,18 +1,15 @@
 use dioxus::prelude::*;
 
 /// Варианты карточки
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum CardVariant {
     /// Обычная карточка с surface фоном
+    #[default]
     Default,
     /// Карточка с input-bg фоном (для форм, полей ввода)
     Input,
     /// Карточка с border-light фоном (для выделенных секций)
     Highlight,
-}
-
-impl Default for CardVariant {
-    fn default() -> Self { CardVariant::Default }
 }
 
 /// Переиспользуемая карточка-контейнер с опциональным заголовком и действиями.

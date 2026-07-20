@@ -331,7 +331,7 @@ pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
     let current_theme = use_signal(|| "dark".to_string());
     let theme = use_memo(move || get_theme(&current_theme()));
 
-    use_context_provider(|| current_theme.clone());
+    use_context_provider(|| current_theme);
 
     let css_vars = theme().to_css_variables();
 

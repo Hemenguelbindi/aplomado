@@ -2,10 +2,10 @@ use crate::history::ScanRecord;
 use std::io;
 use std::path::Path;
 
-mod html;
-mod txt;
-mod json;
 mod csv;
+mod html;
+mod json;
+mod txt;
 mod zip;
 
 /// Supported export formats for scan reports.
@@ -45,10 +45,10 @@ impl ExportFormat {
 }
 
 // Re-export individual format functions for direct use / backward compat.
-pub use html::{export_html, export_html_multi};
-pub use txt::{export_txt, export_txt_multi};
-pub use json::export_json;
 pub use csv::export_csv;
+pub use html::{export_html, export_html_multi};
+pub use json::export_json;
+pub use txt::{export_txt, export_txt_multi};
 
 // ── Single-record helpers (backward compat) ──────────────────────────────
 
@@ -110,7 +110,10 @@ pub fn save_reports(
 
 fn save_reports_json(records: &[ScanRecord], output_path: &Path) -> io::Result<()> {
     let json = serde_json::to_string_pretty(records).map_err(|e| {
-        io::Error::new(io::ErrorKind::Other, format!("JSON serialization error: {e}"))
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("JSON serialization error: {e}"),
+        )
     })?;
     std::fs::write(output_path, &json)
 }

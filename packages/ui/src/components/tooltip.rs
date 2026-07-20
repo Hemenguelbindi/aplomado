@@ -1,16 +1,13 @@
 use dioxus::prelude::*;
 
 /// Позиция тултипа относительно триггера
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum TooltipPosition {
+    #[default]
     Top,
     Bottom,
     Left,
     Right,
-}
-
-impl Default for TooltipPosition {
-    fn default() -> Self { TooltipPosition::Top }
 }
 
 /// Тултип, появляющийся при наведении на триггер.
@@ -35,10 +32,18 @@ pub struct TooltipProps {
 #[component]
 pub fn Tooltip(props: TooltipProps) -> Element {
     let position_style = match props.position {
-        TooltipPosition::Top => "bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px",
-        TooltipPosition::Bottom => "top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px",
-        TooltipPosition::Left => "right: 100%; top: 50%; transform: translateY(-50%); margin-right: 4px",
-        TooltipPosition::Right => "left: 100%; top: 50%; transform: translateY(-50%); margin-left: 4px",
+        TooltipPosition::Top => {
+            "bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px"
+        }
+        TooltipPosition::Bottom => {
+            "top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px"
+        }
+        TooltipPosition::Left => {
+            "right: 100%; top: 50%; transform: translateY(-50%); margin-right: 4px"
+        }
+        TooltipPosition::Right => {
+            "left: 100%; top: 50%; transform: translateY(-50%); margin-left: 4px"
+        }
     };
 
     rsx! {

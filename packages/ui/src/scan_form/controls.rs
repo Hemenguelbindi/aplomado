@@ -1,7 +1,7 @@
-use dioxus::prelude::*;
-use crate::models::ScanTargetItem;
+use super::{build_scan_config, ScanConfigUi};
 use crate::components::{Button, ButtonVariant};
-use super::{ScanConfigUi, build_scan_config};
+use crate::models::ScanTargetItem;
+use dioxus::prelude::*;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct ScanControlsProps {
@@ -33,7 +33,7 @@ pub fn ScanControls(props: ScanControlsProps) -> Element {
                             props.on_start_scan.call(cfg);
                         }
                     },
-                    "▶ Запустить все цели"
+                    "\u{25B6} Запустить все цели"
                 }
             }
         }

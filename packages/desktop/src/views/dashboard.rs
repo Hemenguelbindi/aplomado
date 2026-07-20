@@ -1,6 +1,6 @@
-use dioxus::prelude::*;
-use ui::{DashboardView, models::HostInfo, ScanStatusUi};
 use aplomado_core::history::ScanRecord;
+use dioxus::prelude::*;
+use ui::{models::HostInfo, DashboardView, ScanStatusUi};
 
 #[component]
 pub fn Dashboard() -> Element {

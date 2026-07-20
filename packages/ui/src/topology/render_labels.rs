@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use crate::topology::layout::LayoutNode;
+use dioxus::prelude::*;
 
 /// Render SVG text labels for all visible nodes.
 ///

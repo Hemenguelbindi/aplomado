@@ -1,9 +1,9 @@
-use dioxus::prelude::*;
-use std::collections::HashSet;
 use crate::topology::layout::{LayoutEdge, LayoutNode};
-use crate::topology::svg_helpers::SubnetGroup;
 use crate::topology::render_edges::render_edges;
 use crate::topology::render_nodes::render_nodes;
+use crate::topology::svg_helpers::SubnetGroup;
+use dioxus::prelude::*;
+use std::collections::HashSet;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct SvgCanvasProps {
@@ -100,7 +100,7 @@ pub fn SvgCanvas(props: SvgCanvasProps) -> Element {
                 props.visible_min_x, props.visible_max_x, props.visible_min_y, props.visible_max_y,
                 props.selected_host,
                 props.hovered_host,
-                props.on_select_host.clone(),
+                props.on_select_host,
             )}
         }
     }

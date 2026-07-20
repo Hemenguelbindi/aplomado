@@ -1,15 +1,28 @@
+use super::{
+    get_ports_for_target, parse_custom_ports, parse_target, ScanConfigUi, ScanFormProps,
+    ScanStatusUi,
+};
+use super::{
+    PortInput, PresetSelector, ScanControls, SessionNameEditor, StatusDisplay, TargetList,
+};
+use crate::components::TextInput;
 use crate::models::ScanPreset;
 use dioxus::prelude::*;
-use crate::components::TextInput;
-use super::{ScanConfigUi, ScanStatusUi, ScanFormProps, parse_target, parse_custom_ports, get_ports_for_target};
-use super::{PresetSelector, PortInput, TargetList, StatusDisplay, SessionNameEditor, ScanControls};
 
 fn ports_info(preset: &ScanPreset) -> Option<Element> {
-    if matches!(preset, ScanPreset::Custom) { return None; }
+    if matches!(preset, ScanPreset::Custom) {
+        return None;
+    }
     let ports = preset.ports();
-    if ports.is_empty() { return None; }
+    if ports.is_empty() {
+        return None;
+    }
     let count = ports.len();
-    let list = ports.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", ");
+    let list = ports
+        .iter()
+        .map(|p| p.to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
     Some(rsx! {
         div {
             class: "text-xs font-mono mt-1",
