@@ -101,3 +101,45 @@ pub fn known_service(port: u16) -> &'static str {
         _ => "unknown",
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::{Ipv4Addr, TcpListener};
+
+    #[tokio::test]
+    async fn test_scan_port_open() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let state = scan_port(IpAddr::V4(Ipv4Addr::LOCALHOST), port).await;
+        assert_eq!(state, PortState::Open);
+        drop(listener);
+    }
+
+    #[tokio::test]
+    async fn test_scan_port_closed() {
+        let state = scan_port(IpAddr::V4(Ipv4Addr::LOCALHOST), 1).await;
+        assert_eq!(state, PortState::Closed);
+    }
+
+    #[test]
+    fn test_known_service() {
+        assert_eq!(known_service(22), "ssh");
+        assert_eq!(known_service(80), "http");
+        assert_eq!(known_service(443), "https");
+        assert_eq!(known_service(3306), "mysql");
+        assert_eq!(known_service(9999), "unknown");
+    }
+
+    #[tokio::test]
+    async fn test_scan_host_returns_open_ports() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let ports = &[port, 1];
+        let results = scan_host(IpAddr::V4(Ipv4Addr::LOCALHOST), ports).await;
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].port, port);
+        assert_eq!(results[0].state, PortState::Open);
+        drop(listener);
+    }
+}

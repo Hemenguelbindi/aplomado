@@ -170,3 +170,32 @@ async fn scan_single_target_inner(
         route: Vec::new(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::Ipv4Addr;
+    use tokio::net::TcpListener;
+
+    #[tokio::test]
+    async fn test_scan_localhost() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let ip = IpAddr::V4(Ipv4Addr::LOCALHOST);
+        let host = scan_single_target(ip, &[port], None).await;
+        assert_eq!(host.ip, ip);
+        assert!(host.alive);
+        assert!(!host.ports.is_empty());
+        assert_eq!(host.ports[0].port, port);
+        drop(listener);
+    }
+
+    #[tokio::test]
+    async fn test_scan_timeout_returns_dead() {
+        // Use an unreachable IP to force timeout
+        let ip = IpAddr::V4(Ipv4Addr::new(198, 51, 100, 1));
+        let host = scan_single_target(ip, &[80], None).await;
+        assert_eq!(host.ip, ip);
+        assert!(!host.alive);
+    }
+}

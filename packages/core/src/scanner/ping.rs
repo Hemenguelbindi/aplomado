@@ -43,3 +43,35 @@ pub async fn probe_port(ip: IpAddr, port: u16) -> HostReachability {
         Err(_) => HostReachability::NoResponse,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::{Ipv4Addr, TcpListener};
+
+    #[tokio::test]
+    async fn test_probe_port_alive() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let result = probe_port(IpAddr::V4(Ipv4Addr::LOCALHOST), port).await;
+        assert_eq!(result, HostReachability::Alive);
+        drop(listener);
+    }
+
+    #[tokio::test]
+    async fn test_probe_port_closed() {
+        let result = probe_port(IpAddr::V4(Ipv4Addr::LOCALHOST), 1).await;
+        assert_eq!(result, HostReachability::PortClosed);
+    }
+
+    #[tokio::test]
+    async fn test_probe_host_aggregation() {
+        let result = probe_host(IpAddr::V4(Ipv4Addr::LOCALHOST)).await;
+        assert!(result == HostReachability::Alive || result == HostReachability::PortClosed);
+    }
+
+    #[tokio::test]
+    async fn test_is_alive() {
+        assert!(is_alive(IpAddr::V4(Ipv4Addr::LOCALHOST)).await);
+    }
+}
