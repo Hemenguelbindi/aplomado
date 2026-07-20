@@ -1,5 +1,5 @@
-use peregrine_core::export::*;
-use peregrine_core::history::{ScanRecord, StoredHostInfo, StoredPortInfo};
+use aplomado_core::export::*;
+use aplomado_core::history::{ScanRecord, StoredHostInfo, StoredPortInfo};
 
 fn make_record(id: &str) -> ScanRecord {
     ScanRecord {
@@ -102,7 +102,7 @@ fn export_txt_multi_has_separators() {
     assert!(txt.contains("\n\n---\n\n"));
     let count = txt.matches("\n\n---\n\n").count();
     assert_eq!(count, 2);
-    assert!(txt.contains("PEREGRINE Scan Report"));
+    assert!(txt.contains("APLOMADO Scan Report"));
     assert!(txt.contains("192.168.1.1"));
 }
 
@@ -165,7 +165,7 @@ fn export_csv_escapes_commas() {
 #[test]
 fn export_zip_creates_valid_archive() {
     let records = make_records();
-    let dir = std::env::temp_dir().join("peregrine_zip_test");
+    let dir = std::env::temp_dir().join("aplomado_zip_test");
     let _ = std::fs::create_dir_all(&dir);
     let zip_path = dir.join("test_export.zip");
     let _ = std::fs::remove_file(&zip_path);
@@ -181,7 +181,7 @@ fn export_zip_creates_valid_archive() {
 // ── save_reports dispatch tests ──────────────────────────────────────────
 
 fn test_dir(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join("peregrine_export_test").join(name);
+    let dir = std::env::temp_dir().join("aplomado_export_test").join(name);
     let _ = std::fs::create_dir_all(&dir);
     dir
 }
@@ -226,7 +226,7 @@ fn save_reports_dispatches_txt() {
 
     save_reports(&records, ExportFormat::Txt, &path).unwrap();
     let content = std::fs::read_to_string(&path).unwrap();
-    assert!(content.contains("PEREGRINE Scan Report"));
+    assert!(content.contains("APLOMADO Scan Report"));
     assert!(content.contains("\n\n---\n\n"));
 
     cleanup(&dir);

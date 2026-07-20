@@ -1,8 +1,8 @@
 //! Модели данных для UI.
-//! Все общие типы приходят из `peregrine-types` — единого источника истины.
+//! Все общие типы приходят из `aplomado-types` — единого источника истины.
 //! В этом файле остаются только UI-специфичные типы.
 
-pub use peregrine_types::{
+pub use aplomado_types::{
     ScanTarget, HostInfo, PortInfo, Hop, CveSummary,
     TransportProto, PortState, ScanResult,
     extract_version, extract_version_num,

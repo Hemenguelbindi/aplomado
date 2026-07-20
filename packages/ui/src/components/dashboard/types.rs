@@ -1,6 +1,6 @@
 use crate::helpers::{format_datetime, pluralize};
 use crate::models::HostInfo;
-use peregrine_core::history::ScanRecord;
+use aplomado_core::history::ScanRecord;
 
 // ---------------------------------------------------------------------------
 // Data structures

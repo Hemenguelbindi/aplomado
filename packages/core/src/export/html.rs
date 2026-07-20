@@ -5,7 +5,7 @@ pub fn export_html(record: &ScanRecord) -> String {
     let mut html = format!(
         r#"<!DOCTYPE html>
 <html lang="ru">
-<head><meta charset="UTF-8"><title>PEREGRINE Scan Report</title>
+<head><meta charset="UTF-8"><title>APLOMADO Scan Report</title>
 <style>
 body {{ font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; }}
 h1 {{ color: #58a6ff; }}
@@ -15,7 +15,7 @@ th {{ color: #8b949e; }}
 .alive {{ color: #3fb950; }}
 .dead {{ color: #f85149; }}
 </style></head><body>
-<h1>PEREGRINE Scan Report</h1>
+<h1>APLOMADO Scan Report</h1>
 <p>Date: {} | Targets: {} | Hosts: {} | Alive: {} | Duration: {}s</p>
 <table>
 <thead><tr><th>IP</th><th>Hostname</th><th>OS</th><th>Status</th><th>Ports</th></tr></thead>
@@ -60,12 +60,12 @@ pub fn export_html_multi(records: &[ScanRecord]) -> String {
     if records.is_empty() {
         return r#"<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>PEREGRINE Scan Reports</title>
+<head><meta charset="UTF-8"><title>APLOMADO Scan Reports</title>
 <style>
 body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; }
 h1 { color: #58a6ff; }
 </style></head><body>
-<h1>PEREGRINE Scan Reports</h1>
+<h1>APLOMADO Scan Reports</h1>
 <p>No records found.</p>
 </body></html>"#
             .to_string();
@@ -74,7 +74,7 @@ h1 { color: #58a6ff; }
     let mut html = format!(
         r#"<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>PEREGRINE Scan Reports</title>
+<head><meta charset="UTF-8"><title>APLOMADO Scan Reports</title>
 <style>
 body {{ font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; }}
 h1 {{ color: #58a6ff; }}
@@ -86,7 +86,7 @@ th {{ color: #8b949e; }}
 .alive {{ color: #3fb950; }}
 .dead {{ color: #f85149; }}
 </style></head><body>
-<h1>PEREGRINE Scan Reports ({} records)</h1>
+<h1>APLOMADO Scan Reports ({} records)</h1>
 "#,
         records.len()
     );

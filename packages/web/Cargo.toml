@@ -7,7 +7,7 @@ edition = "2021"
 dioxus = { workspace = true, features = ["router", "fullstack"] }
 ui = { workspace = true }
 api = { workspace = true }
-peregrine-core = { workspace = true }
+aplomado-core = { workspace = true }
 chrono = { version = "0.4", features = ["serde"] }
 serde_json = "1"
 

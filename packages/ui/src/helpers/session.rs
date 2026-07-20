@@ -1,5 +1,5 @@
 use crate::models::{HostInfo, ScanTarget, Session, SessionStatus};
-use peregrine_core::history::{ScanRecord, StoredCveSummary, StoredHostInfo, StoredPortInfo};
+use aplomado_core::history::{ScanRecord, StoredCveSummary, StoredHostInfo, StoredPortInfo};
 
 pub fn create_default_session() -> Session {
     let now = chrono::Local::now().to_rfc3339();

@@ -7,7 +7,7 @@ use crate::cve::database::{CveDatabase, CveSeverity};
 pub async fn update_cve_from_sources(path: &std::path::Path) -> Result<CveDatabase, String> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
-        .user_agent("peregrine-vuln-scanner/0.1")
+        .user_agent("aplomado-vuln-scanner/0.1")
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -33,7 +33,7 @@ pub async fn update_cve_from_sources(path: &std::path::Path) -> Result<CveDataba
                             }
                             if count > 0 {
                                 eprintln!(
-                                    "[peregrine] CIRCL: {} CVEs for {} ({})",
+                                    "[aplomado] CIRCL: {} CVEs for {} ({})",
                                     count, service, cpe
                                 );
                             }
@@ -44,7 +44,7 @@ pub async fn update_cve_from_sources(path: &std::path::Path) -> Result<CveDataba
                                 .take(200)
                                 .collect();
                             eprintln!(
-                                "[peregrine] Warning: failed to parse CIRCL response for {}: {} — body preview: {:?}",
+                                "[aplomado] Warning: failed to parse CIRCL response for {}: {} — body preview: {:?}",
                                 cpe, e, preview
                             );
                         }
@@ -52,13 +52,13 @@ pub async fn update_cve_from_sources(path: &std::path::Path) -> Result<CveDataba
                 }
                 Ok(resp) => {
                     eprintln!(
-                        "[peregrine] Warning: CIRCL API returned {} for {}",
+                        "[aplomado] Warning: CIRCL API returned {} for {}",
                         resp.status(),
                         cpe
                     );
                 }
                 Err(e) => {
-                    eprintln!("[peregrine] Warning: failed to fetch CVE for {}: {}", cpe, e);
+                    eprintln!("[aplomado] Warning: failed to fetch CVE for {}: {}", cpe, e);
                 }
             }
         }
@@ -69,7 +69,7 @@ pub async fn update_cve_from_sources(path: &std::path::Path) -> Result<CveDataba
     save_cve_db(&db, path).map_err(|e| e.to_string())?;
 
     eprintln!(
-        "[peregrine] CVE database updated: {} entries from {} fixes",
+        "[aplomado] CVE database updated: {} entries from {} fixes",
         db.total_count,
         all_fixes.len()
     );

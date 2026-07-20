@@ -6,7 +6,7 @@ use crate::helpers::pluralize;
 use crate::models::HostInfo;
 use crate::ScanStatusUi;
 use dioxus::prelude::*;
-use peregrine_core::history::ScanRecord;
+use aplomado_core::history::ScanRecord;
 
 // ---------------------------------------------------------------------------
 // Props — unchanged
@@ -158,7 +158,7 @@ pub fn DashboardView(props: DashboardViewProps) -> Element {
             if props.hosts.is_empty() && props.history.is_empty() {
                 EmptyState {
                     icon: "🦅",
-                    title: "PEREGRINE — Панель управления",
+                    title: "APLOMADO — Панель управления",
                     description: "Запустите первое сканирование сети, чтобы увидеть статистику и уведомления здесь.",
                 }
             }

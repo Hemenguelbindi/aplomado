@@ -133,14 +133,56 @@ checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
 name = "api"
 version = "0.1.0"
 dependencies = [
+ "aplomado-core",
+ "aplomado-types",
  "chrono",
  "dioxus",
- "peregrine-core",
- "peregrine-types",
  "serde",
  "serde_json",
  "tokio",
  "uuid",
+]
+
+[[package]]
+name = "aplomado"
+version = "0.1.0"
+dependencies = [
+ "api",
+ "aplomado-core",
+ "chrono",
+ "clap",
+ "dioxus",
+ "futures",
+ "tokio",
+ "ui",
+]
+
+[[package]]
+name = "aplomado-core"
+version = "0.1.0"
+dependencies = [
+ "aplomado-types",
+ "chrono",
+ "dirs 5.0.1",
+ "futures",
+ "reqwest",
+ "rusqlite",
+ "rustls",
+ "serde",
+ "serde_json",
+ "socket2 0.5.10",
+ "tokio",
+ "tokio-rustls",
+ "webpki-roots 0.26.11",
+ "zip",
+]
+
+[[package]]
+name = "aplomado-types"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3786,10 +3828,10 @@ dependencies = [
 name = "mobile"
 version = "0.1.0"
 dependencies = [
+ "aplomado-core",
  "chrono",
  "dioxus",
  "futures",
- "peregrine-core",
  "tokio",
  "ui",
 ]
@@ -4264,48 +4306,6 @@ name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
-
-[[package]]
-name = "peregrine"
-version = "0.1.0"
-dependencies = [
- "api",
- "chrono",
- "clap",
- "dioxus",
- "futures",
- "peregrine-core",
- "tokio",
- "ui",
-]
-
-[[package]]
-name = "peregrine-core"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "dirs 5.0.1",
- "futures",
- "peregrine-types",
- "reqwest",
- "rusqlite",
- "rustls",
- "serde",
- "serde_json",
- "socket2 0.5.10",
- "tokio",
- "tokio-rustls",
- "webpki-roots 0.26.11",
- "zip",
-]
-
-[[package]]
-name = "peregrine-types"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
 
 [[package]]
 name = "petgraph"
@@ -6357,12 +6357,12 @@ name = "ui"
 version = "0.1.0"
 dependencies = [
  "api",
+ "aplomado-core",
+ "aplomado-types",
  "chrono",
  "dioxus",
  "fastrand",
  "futures",
- "peregrine-core",
- "peregrine-types",
  "petgraph",
  "serde",
  "tokio",
@@ -6605,9 +6605,9 @@ name = "web"
 version = "0.1.0"
 dependencies = [
  "api",
+ "aplomado-core",
  "chrono",
  "dioxus",
- "peregrine-core",
  "serde_json",
  "ui",
 ]

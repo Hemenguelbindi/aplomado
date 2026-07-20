@@ -4,14 +4,14 @@ use ui::{
     models::{HostInfo, Session},
     ScanConfigUi, ScanStatusUi, ScanView,
 };
-use peregrine_core::history::ScanRecord;
+use aplomado_core::history::ScanRecord;
 
 fn count_target_hosts(targets: &[ui::models::ScanTarget]) -> u32 {
     targets.iter().map(|t| match t {
-        ui::models::ScanTarget::Cidr(c) => peregrine_core::scanner::expand_cidr(c).len() as u32,
+        ui::models::ScanTarget::Cidr(c) => aplomado_core::scanner::expand_cidr(c).len() as u32,
         ui::models::ScanTarget::Ip(_) | ui::models::ScanTarget::Hostname(_) => 1,
         ui::models::ScanTarget::Range(s, e) => {
-            peregrine_core::scanner::expand_range(&s.to_string(), &e.to_string()).len() as u32
+            aplomado_core::scanner::expand_range(&s.to_string(), &e.to_string()).len() as u32
         }
     }).sum()
 }

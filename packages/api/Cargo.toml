@@ -8,10 +8,10 @@ dioxus = { workspace = true, features = ["fullstack"] }
 serde = { workspace = true }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
-peregrine-core = { workspace = true, optional = true }
+aplomado-core = { workspace = true, optional = true }
 uuid = { workspace = true }
-peregrine-types = { workspace = true }
+aplomado-types = { workspace = true }
 tokio = { version = "1", features = ["rt", "net", "time"], optional = true }
 
 [features]
-server = ["dioxus/server", "peregrine-core", "peregrine-core/scanner", "peregrine-core/fingerprint", "peregrine-core/database", "peregrine-core/cve-client", "tokio"]
+server = ["dioxus/server", "aplomado-core", "aplomado-core/scanner", "aplomado-core/fingerprint", "aplomado-core/database", "aplomado-core/cve-client", "tokio"]

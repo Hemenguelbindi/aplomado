@@ -3,7 +3,7 @@
 //! Вынесены из платформенных view-файлов (web, desktop) для устранения дублирования.
 
 use dioxus::prelude::{ReadableExt, Signal, WritableExt};
-use peregrine_core::history::ScanRecord;
+use aplomado_core::history::ScanRecord;
 
 use crate::helpers::session::build_scan_record;
 use crate::models::{HostInfo, Session, SessionStatus, TargetStatus};
@@ -25,7 +25,7 @@ pub async fn handle_scan_success(
 
     let hosts_alive = hosts.iter().filter(|h| h.alive).count() as u32;
     let record = build_scan_record(&hosts, &targets_str, duration_secs);
-    peregrine_core::history::save_scan(&record).ok();
+    aplomado_core::history::save_scan(&record).ok();
 
     let mut h = history();
     h.insert(0, record);

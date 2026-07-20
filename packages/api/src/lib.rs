@@ -1,7 +1,7 @@
-//! Server Functions for Peregrine scanner.
+//! Server Functions for Aplomado scanner.
 
 use dioxus::prelude::*;
-use peregrine_types::*;
+use aplomado_types::*;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 
@@ -14,18 +14,18 @@ fn init_server() {
     SERVER_INIT.get_or_init(|| {
         #[cfg(feature = "server")]
         {
-            if let Err(e) = peregrine_core::database::init_db() {
-                eprintln!("[peregrine] DB init error: {e}");
+            if let Err(e) = aplomado_core::database::init_db() {
+                eprintln!("[aplomado] DB init error: {e}");
             } else {
-                if let Err(e) = peregrine_core::database::migrate_from_json() {
-                    eprintln!("[peregrine] DB migration error: {e}");
+                if let Err(e) = aplomado_core::database::migrate_from_json() {
+                    eprintln!("[aplomado] DB migration error: {e}");
                 } else {
-                    eprintln!("[peregrine] SQLite DB ready");
+                    eprintln!("[aplomado] SQLite DB ready");
                 }
             }
-            eprintln!("[peregrine] Initializing CVE database...");
-            peregrine_core::cve::init_cve_on_startup();
-            peregrine_core::fingerprint::banner::ensure_crypto_provider();
+            eprintln!("[aplomado] Initializing CVE database...");
+            aplomado_core::cve::init_cve_on_startup();
+            aplomado_core::fingerprint::banner::ensure_crypto_provider();
         }
         true
     });
@@ -63,10 +63,10 @@ async fn run_scan_on_server(req: ScanRequest) -> Result<Vec<HostInfo>, ServerFnE
     let mut all_ips: Vec<std::net::IpAddr> = Vec::new();
     for target_str in &req.targets {
         if all_ips.len() >= MAX_TOTAL_IPS {
-            eprintln!("[peregrine] Target IP limit reached ({MAX_TOTAL_IPS}), truncating");
+            eprintln!("[aplomado] Target IP limit reached ({MAX_TOTAL_IPS}), truncating");
             break;
         }
-        all_ips.extend(peregrine_core::scanner::resolve_target_str(target_str));
+        all_ips.extend(aplomado_core::scanner::resolve_target_str(target_str));
     }
     all_ips.truncate(MAX_TOTAL_IPS);
 
@@ -80,7 +80,7 @@ async fn run_scan_on_server(req: ScanRequest) -> Result<Vec<HostInfo>, ServerFnE
         let ports = ports.clone();
         handles.push(tokio::spawn(async move {
             let _permit = sem.acquire().await.ok();
-            peregrine_core::scanner::engine::scan_single_target(ip, &ports, None).await
+            aplomado_core::scanner::engine::scan_single_target(ip, &ports, None).await
         }));
     }
 
@@ -106,7 +106,7 @@ pub async fn create_session(name: String) -> Result<String, ServerFnError> {
         init_server();
         let id = uuid::Uuid::new_v4().to_string();
         let now = chrono::Utc::now().to_rfc3339();
-        let session = peregrine_core::database::SessionData {
+        let session = aplomado_core::database::SessionData {
             id: id.clone(),
             name,
             targets: vec![],
@@ -116,7 +116,7 @@ pub async fn create_session(name: String) -> Result<String, ServerFnError> {
             hosts_json: "[]".into(),
             duration_secs: 0,
         };
-        peregrine_core::database::save_session(&session)
+        aplomado_core::database::save_session(&session)
             .map_err(|e| ServerFnError::new(e.to_string()))?;
         Ok(id)
     }
@@ -133,9 +133,9 @@ pub async fn save_session(data: String) -> Result<(), ServerFnError> {
     #[cfg(feature = "server")]
     {
         init_server();
-        let session: peregrine_core::database::SessionData = serde_json::from_str(&data)
+        let session: aplomado_core::database::SessionData = serde_json::from_str(&data)
             .map_err(|e| ServerFnError::new(e.to_string()))?;
-        peregrine_core::database::save_session(&session)
+        aplomado_core::database::save_session(&session)
             .map_err(|e| ServerFnError::new(e.to_string()))?;
         Ok(())
     }
@@ -152,7 +152,7 @@ pub async fn get_session(id: String) -> Result<Option<String>, ServerFnError> {
     #[cfg(feature = "server")]
     {
         init_server();
-        match peregrine_core::database::load_session(&id) {
+        match aplomado_core::database::load_session(&id) {
             Ok(Some(s)) => {
                 let json = serde_json::to_string(&s)
                     .map_err(|e| ServerFnError::new(e.to_string()))?;
@@ -175,7 +175,7 @@ pub async fn list_sessions() -> Result<Vec<String>, ServerFnError> {
     #[cfg(feature = "server")]
     {
         init_server();
-        let sessions = peregrine_core::database::list_sessions()
+        let sessions = aplomado_core::database::list_sessions()
             .map_err(|e| ServerFnError::new(e.to_string()))?;
         sessions
             .iter()
@@ -196,7 +196,7 @@ pub async fn list_sessions() -> Result<Vec<String>, ServerFnError> {
 pub async fn delete_session(id: String) -> Result<(), ServerFnError> {
     #[cfg(feature = "server")]
     {
-        peregrine_core::database::delete_session(&id)
+        aplomado_core::database::delete_session(&id)
             .map_err(|e| ServerFnError::new(e.to_string()))?;
         Ok(())
     }
@@ -231,7 +231,7 @@ pub struct LastScanData {
 #[cfg(feature = "server")]
 async fn get_last_scan_impl() -> Result<Option<LastScanData>, ServerFnError> {
     init_server();
-    match peregrine_core::history::load_last_scan() {
+    match aplomado_core::history::load_last_scan() {
         Some(record) => {
             let hosts: Vec<HostInfo> = record.hosts.into_iter().map(|h| h.into()).collect();
             Ok(Some(LastScanData {

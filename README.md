@@ -1,10 +1,10 @@
-# Peregrine
+# Aplomado
 
-**Peregrine** — это кроссплатформенный сканер уязвимостей с графическим интерфейсом, написанный на Rust с использованием Dioxus 0.7.
+**Aplomado** — это кроссплатформенный сканер уязвимостей с графическим интерфейсом, написанный на Rust с использованием Dioxus 0.7.
 
 Он выполняет TCP-сканирование портов, захват баннеров (banner grabbing), определение ОС по баннерам, поиск CVE-уязвимостей через CIRCL API, traceroute, сохранение истории сканирования в SQLite и экспорт отчётов в HTML/JSON/TXT/CSV/ZIP.
 
-Назван в честь **сапсана** (*Falco peregrinus*) — самой быстрой птицы в мире, развивающей скорость до 390 км/ч при пикировании на жертву.
+Назван в честь **апломадо** (*Falco femoralis*) — стремительного сокола Америк, известного своей выносливостью и охотничьим мастерством.
 
 ## Возможности
 
@@ -24,7 +24,7 @@
 
 | Платформа | Статус | Запуск |
 |-----------|--------|--------|
-| **Desktop** (Linux/macOS/Windows) | ✅ Готово | `cargo run --bin peregrine -- run` |
+| **Desktop** (Linux/macOS/Windows) | ✅ Готово | `cargo run --bin aplomado -- run` |
 | **Web** | ✅ Готово | `dx serve` в `packages/web/` |
 | **Mobile** (Android/iOS) | ✅ Готово | `dx serve --platform android` |
 
@@ -43,7 +43,7 @@
 Проект организован как Cargo workspace из 7 пакетов:
 
 ```
-peregrine/
+aplomado/
 ├── Cargo.toml                  # workspace root
 ├── packages/
 │   ├── types/                  # Общие модели данных (ScanTarget, HostInfo, PortInfo, CveSummary …)
@@ -87,31 +87,31 @@ peregrine/
 ### Сборка и запуск Desktop
 
 ```bash
-git clone https://github.com/ваш-username/peregrine.git
-cd peregrine
-cargo run --bin peregrine -- run
+git clone https://github.com/ваш-username/aplomado.git
+cd aplomado
+cargo run --bin aplomado -- run
 ```
 
 ### CLI-режим
 
 ```bash
 # Сканирование одного хоста
-cargo run --bin peregrine -- scan 192.168.1.1
+cargo run --bin aplomado -- scan 192.168.1.1
 
 # Сканирование подсети
-cargo run --bin peregrine -- scan 192.168.1.0/24
+cargo run --bin aplomado -- scan 192.168.1.0/24
 
 # Список истории
-cargo run --bin peregrine -- list
+cargo run --bin aplomado -- list
 
 # Детали скана
-cargo run --bin peregrine -- show --last
+cargo run --bin aplomado -- show --last
 
 # Экспорт отчёта
-cargo run --bin peregrine -- export --last --format html
+cargo run --bin aplomado -- export --last --format html
 
 # Обновление CVE базы
-cargo run --bin peregrine -- update-cve
+cargo run --bin aplomado -- update-cve
 ```
 
 ### Web-версия
@@ -128,10 +128,10 @@ dx serve
 cargo test
 
 # Тесты конкретного пакета
-cargo test -p peregrine-core
+cargo test -p aplomado-core
 
 # Тесты экспорта
-cargo test -p peregrine-core --test export_tests
+cargo test -p aplomado-core --test export_tests
 ```
 
 ## Технологии

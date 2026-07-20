@@ -30,7 +30,7 @@ fn main() {
 fn App() -> Element {
     let scan_results = use_signal(Vec::<HostInfo>::new);
     let scan_status = use_signal(|| ScanStatusUi::Idle);
-    let history = use_signal(peregrine_core::history::load_history);
+    let history = use_signal(aplomado_core::history::load_history);
     let current_session = use_signal(|| {
         None::<Session>
     });
@@ -63,7 +63,7 @@ fn App() -> Element {
 
     rsx! {
         ThemeProvider {
-            document::Title { "Peregrine — Сканер уязвимостей" }
+            document::Title { "Aplomado — Сканер уязвимостей" }
             document::Link { rel: "icon", href: FAVICON }
             Router::<Route> {}
         }

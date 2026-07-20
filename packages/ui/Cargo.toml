@@ -6,8 +6,8 @@ edition = "2021"
 [dependencies]
 dioxus = { workspace = true }
 api = { workspace = true, optional = true }
-peregrine-core = { workspace = true }
-peregrine-types = { workspace = true }
+aplomado-core = { workspace = true }
+aplomado-types = { workspace = true }
 chrono = { version = "0.4", features = ["serde"] }
 petgraph = { version = "0.7", default-features = false, features = ["serde", "graphmap", "stable_graph"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -19,5 +19,5 @@ futures = { version = "0.3", optional = true }
 
 [features]
 default = []
-server = ["api/server", "peregrine-core/scanner", "peregrine-core/fingerprint", "scan-engine"]
-scan-engine = ["peregrine-core/scanner", "peregrine-core/fingerprint", "tokio", "futures"]
+server = ["api/server", "aplomado-core/scanner", "aplomado-core/fingerprint", "scan-engine"]
+scan-engine = ["aplomado-core/scanner", "aplomado-core/fingerprint", "tokio", "futures"]

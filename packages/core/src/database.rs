@@ -37,8 +37,8 @@ pub struct SessionTargetData {
 fn db_path() -> PathBuf {
     dirs::data_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join(".peregrine")
-        .join("peregrine.db")
+        .join(".aplomado")
+        .join("aplomado.db")
 }
 
 /// Выполнить замыкание с доступом к пулу соединений.
@@ -186,7 +186,7 @@ pub fn migrate_from_json() -> Result<(), Box<dyn std::error::Error>> {
         // Загрузить из старых JSON файлов
         let json_dir = dirs::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(".peregrine")
+            .join(".aplomado")
             .join("scans");
 
         if !json_dir.exists() {

@@ -283,10 +283,10 @@ pub fn delete_scan(id: &str) -> std::io::Result<()> {
 }
 
 // ---------------------------------------------------------------------------
-// Conversions from stored types → peregrine_types public models
+// Conversions from stored types → aplomado_types public models
 // ---------------------------------------------------------------------------
 
-impl From<StoredCveSummary> for peregrine_types::CveSummary {
+impl From<StoredCveSummary> for aplomado_types::CveSummary {
     fn from(s: StoredCveSummary) -> Self {
         Self {
             id: s.id,
@@ -298,12 +298,12 @@ impl From<StoredCveSummary> for peregrine_types::CveSummary {
     }
 }
 
-impl From<StoredPortInfo> for peregrine_types::PortInfo {
+impl From<StoredPortInfo> for aplomado_types::PortInfo {
     fn from(s: StoredPortInfo) -> Self {
         Self {
             port: s.port,
-            protocol: peregrine_types::TransportProto::Tcp,
-            state: peregrine_types::PortState::Open,
+            protocol: aplomado_types::TransportProto::Tcp,
+            state: aplomado_types::PortState::Open,
             service_name: s.service,
             service_version: s.version,
             banner: s.banner,
@@ -313,7 +313,7 @@ impl From<StoredPortInfo> for peregrine_types::PortInfo {
     }
 }
 
-impl From<StoredHostInfo> for peregrine_types::HostInfo {
+impl From<StoredHostInfo> for aplomado_types::HostInfo {
     fn from(s: StoredHostInfo) -> Self {
         Self {
             ip: s.ip.parse().unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED)),

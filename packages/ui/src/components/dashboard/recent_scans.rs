@@ -1,7 +1,7 @@
 use crate::components::Card;
 use crate::helpers::format_datetime;
 use dioxus::prelude::*;
-use peregrine_core::history::ScanRecord;
+use aplomado_core::history::ScanRecord;
 
 #[component]
 pub fn RecentScansTable(scans: Vec<ScanRecord>) -> Element {

@@ -18,5 +18,5 @@ uuid = { version = "1", features = ["v4", "js"] }
 # workspace
 ui = { path = "packages/ui" }
 api = { path = "packages/api" }
-peregrine-core = { path = "packages/core" }
-peregrine-types = { path = "packages/types" }
+aplomado-core = { path = "packages/core" }
+aplomado-types = { path = "packages/types" }

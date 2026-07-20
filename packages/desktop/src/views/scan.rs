@@ -4,7 +4,7 @@ use ui::{
     models::{HostInfo, Session},
     ScanConfigUi, ScanStatusUi, ScanView,
 };
-use peregrine_core::history::ScanRecord;
+use aplomado_core::history::ScanRecord;
 
 #[component]
 pub fn Scan() -> Element {
@@ -41,11 +41,11 @@ pub fn Scan() -> Element {
                     let start_time = std::time::Instant::now();
 
                     for (i, target) in targets.iter().enumerate() {
-                        let ips = peregrine_core::scanner::resolve_targets(target);
+                        let ips = aplomado_core::scanner::resolve_targets(target);
                         for ip in ips {
                             let current = (i + 1) as u32;
                             status.set(ScanStatusUi::Scanning { current, total });
-                            let host = peregrine_core::scanner::engine::scan_single_target(ip, &ports, None).await;
+                            let host = aplomado_core::scanner::engine::scan_single_target(ip, &ports, None).await;
                             found.push(host);
                             scan_results.set(found.clone());
                             tokio::task::yield_now().await;

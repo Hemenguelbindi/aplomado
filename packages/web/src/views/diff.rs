@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use peregrine_core::history::{ScanDiff, ScanRecord, diff_scans};
+use aplomado_core::history::{ScanDiff, ScanRecord, diff_scans};
 use ui::components::EmptyState;
 use ui::helpers::format_datetime;
 
@@ -179,12 +179,12 @@ fn DiffResults(diff: ScanDiff) -> Element {
                 }
                 SummaryCard {
                     label: "CVE добавлено",
-                    value: diff.cve_changes.iter().filter(|c| matches!(c.change_type, peregrine_core::history::ChangeType::Added)).count().to_string(),
+                    value: diff.cve_changes.iter().filter(|c| matches!(c.change_type, aplomado_core::history::ChangeType::Added)).count().to_string(),
                     color: "var(--color-severity-critical)",
                 }
                 SummaryCard {
                     label: "CVE исправлено",
-                    value: diff.cve_changes.iter().filter(|c| matches!(c.change_type, peregrine_core::history::ChangeType::Removed)).count().to_string(),
+                    value: diff.cve_changes.iter().filter(|c| matches!(c.change_type, aplomado_core::history::ChangeType::Removed)).count().to_string(),
                     color: "var(--color-success)",
                 }
                 SummaryCard {
@@ -236,14 +236,14 @@ fn DiffResults(diff: ScanDiff) -> Element {
                                 tbody {
                                     {diff.port_changes.iter().map(|pc| {
                                         let (change_label, change_color, details) = match &pc.change_type {
-                                            peregrine_core::history::ChangeType::Added =>
+                                            aplomado_core::history::ChangeType::Added =>
                                                 ("Добавлен", "var(--color-severity-high)", String::new()),
-                                            peregrine_core::history::ChangeType::Removed =>
+                                            aplomado_core::history::ChangeType::Removed =>
                                                 ("Удалён", "var(--color-severity-critical)", String::new()),
-                                            peregrine_core::history::ChangeType::ServiceChanged(old, new) =>
+                                            aplomado_core::history::ChangeType::ServiceChanged(old, new) =>
                                                 ("Сервис изменён", "var(--color-severity-medium)",
                                                  format!("{old} → {new}")),
-                                            peregrine_core::history::ChangeType::VersionChanged(old, new) =>
+                                            aplomado_core::history::ChangeType::VersionChanged(old, new) =>
                                                 ("Версия изменена", "var(--color-primary)",
                                                  format!("{:?} → {:?}", old, new)),
                                         };
@@ -297,9 +297,9 @@ fn DiffResults(diff: ScanDiff) -> Element {
                                 tbody {
                                     {diff.cve_changes.iter().map(|cc| {
                                         let (label, color) = match cc.change_type {
-                                            peregrine_core::history::ChangeType::Added =>
+                                            aplomado_core::history::ChangeType::Added =>
                                                 ("🆕 Появилась", "var(--color-severity-critical)"),
-                                            peregrine_core::history::ChangeType::Removed =>
+                                            aplomado_core::history::ChangeType::Removed =>
                                                 ("✅ Исправлена", "var(--color-success)"),
                                             _ => ("Изменена", "var(--color-severity-medium)"),
                                         };

@@ -3,7 +3,7 @@ use crate::history::ScanRecord;
 /// Generate a plain-text report for a single scan record.
 pub fn export_txt(record: &ScanRecord) -> String {
     let mut txt = String::new();
-    txt.push_str("PEREGRINE Scan Report\n");
+    txt.push_str("APLOMADO Scan Report\n");
     txt.push_str(&format!("Date: {}\n", record.timestamp));
     txt.push_str(&format!("Targets: {}\n", record.targets.join(", ")));
     txt.push_str(&format!("Hosts found: {}\n", record.hosts_found));
@@ -35,7 +35,7 @@ pub fn export_txt(record: &ScanRecord) -> String {
 /// Generate a plain-text report for multiple scan records (separated by `---`).
 pub fn export_txt_multi(records: &[ScanRecord]) -> String {
     if records.is_empty() {
-        return "PEREGRINE Scan Reports\nNo records found.\n".to_string();
+        return "APLOMADO Scan Reports\nNo records found.\n".to_string();
     }
 
     let mut parts = Vec::new();

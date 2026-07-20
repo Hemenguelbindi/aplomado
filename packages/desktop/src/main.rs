@@ -6,7 +6,7 @@ use views::{Dashboard, Home, Scan, History};
 mod views;
 
 #[derive(Parser)]
-#[command(name = "peregrine", about = "Peregrine Vulnerability Scanner")]
+#[command(name = "aplomado", about = "Aplomado Vulnerability Scanner")]
 enum Cli {
     /// Запустить GUI (desktop)
     #[command(name = "run")]
@@ -122,10 +122,10 @@ fn App() -> Element {
     });
     use_context_provider(|| current_session);
 
-    let history = use_signal(peregrine_core::history::load_history);
+    let history = use_signal(aplomado_core::history::load_history);
     use_context_provider(|| history);
 
-    peregrine_core::cve::init_cve_on_startup();
+    aplomado_core::cve::init_cve_on_startup();
 
     rsx! {
         ThemeProvider {
@@ -193,7 +193,7 @@ fn DesktopNavbar() -> Element {
 // ─── CLI commands ──────────────────────────────────────────────
 
 fn run_cli_scan(targets: &[String]) {
-    peregrine_core::cve::init_cve_on_startup();
+    aplomado_core::cve::init_cve_on_startup();
     let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
     rt.block_on(async {
         use std::net::ToSocketAddrs;
@@ -204,7 +204,7 @@ fn run_cli_scan(targets: &[String]) {
             let ips: Vec<std::net::IpAddr> = if let Ok(ip) = target_str.parse() {
                 vec![ip]
             } else if target_str.contains('/') {
-                peregrine_core::scanner::expand_cidr(target_str)
+                aplomado_core::scanner::expand_cidr(target_str)
             } else {
                 match (target_str.as_str(), 0).to_socket_addrs() {
                     Ok(addrs) => addrs.map(|a| a.ip()).collect(),
@@ -216,7 +216,7 @@ fn run_cli_scan(targets: &[String]) {
             };
 
             for ip in &ips {
-                let host = peregrine_core::scanner::engine::scan_single_target(*ip, ui::COMMON_PORTS, None).await;
+                let host = aplomado_core::scanner::engine::scan_single_target(*ip, ui::COMMON_PORTS, None).await;
                 let status = if host.alive { "ALIVE" } else { "DOWN" };
                 println!("{ip}\t{status}\t{}", host.os_guess.as_deref().unwrap_or("?"));
                 for p in &host.ports {
@@ -230,7 +230,7 @@ fn run_cli_scan(targets: &[String]) {
 }
 
 fn show_history() {
-    let records = peregrine_core::history::load_history();
+    let records = aplomado_core::history::load_history();
     if records.is_empty() {
         println!("No scan history found.");
         return;
@@ -257,7 +257,7 @@ fn show_history() {
 }
 
 fn show_scan_details(id: Option<String>, last: bool) {
-    let records = peregrine_core::history::load_history();
+    let records = aplomado_core::history::load_history();
     let record = if last {
         records.first()
     } else if let Some(id) = id {
@@ -296,9 +296,9 @@ fn show_scan_details(id: Option<String>, last: bool) {
 }
 
 fn export_report(id: Option<String>, last: bool, format: &str) {
-    let fmt = peregrine_core::export::ExportFormat::from_str(format)
+    let fmt = aplomado_core::export::ExportFormat::from_str(format)
         .expect("Unsupported format. Use: html, json, txt");
-    let records = peregrine_core::history::load_history();
+    let records = aplomado_core::history::load_history();
     let record = if last {
         records.first()
     } else if let Some(id) = id {
@@ -310,9 +310,9 @@ fn export_report(id: Option<String>, last: bool, format: &str) {
 
     match record {
         Some(r) => {
-            let output = std::path::Path::new("peregrine-report")
+            let output = std::path::Path::new("aplomado-report")
                 .with_extension(fmt.extension());
-            peregrine_core::export::save_report(r, fmt, &output)
+            aplomado_core::export::save_report(r, fmt, &output)
                 .expect("Failed to save report");
             println!("Report saved: {}", output.display());
         }
@@ -322,7 +322,7 @@ fn export_report(id: Option<String>, last: bool, format: &str) {
 
 fn update_cve_from_sources() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
-    let count = rt.block_on(peregrine_core::cve::update_cve_if_stale());
+    let count = rt.block_on(aplomado_core::cve::update_cve_if_stale());
     if count > 0 {
         println!("CVE database updated: {count} entries");
     } else {

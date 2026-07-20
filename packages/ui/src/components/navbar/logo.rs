@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Peregrine branding block: "P" badge, "PEREGRINE" text, and version pill.
+/// Aplomado branding block: "A" badge, "APLOMADO" text, and version pill.
 #[component]
 pub fn Logo() -> Element {
     rsx! {
@@ -12,13 +12,13 @@ pub fn Logo() -> Element {
             div {
                 class: "flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm",
                 style: "background: var(--color-primary); color: var(--color-bg-primary);",
-                "K"
+                "A"
             }
             // Name
             span {
                 class: "font-bold text-lg tracking-wide",
                 style: "color: var(--color-text-primary);",
-                "PEREGRINE"
+                "APLOMADO"
             }
             // Version pill
             span {

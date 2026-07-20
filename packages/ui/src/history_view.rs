@@ -1,7 +1,7 @@
 use crate::components::EmptyState;
 use crate::helpers::format_datetime;
 use dioxus::prelude::*;
-use peregrine_core::history::ScanRecord;
+use aplomado_core::history::ScanRecord;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct HistoryViewProps {

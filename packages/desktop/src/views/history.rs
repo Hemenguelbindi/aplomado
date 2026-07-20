@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use ui::{HistoryPage};
-use peregrine_core::history::ScanRecord;
+use aplomado_core::history::ScanRecord;
 
 #[component]
 pub fn History() -> Element {
@@ -12,7 +12,7 @@ pub fn History() -> Element {
             records: records,
             on_select: move |_id: String| {},
             on_delete: move |id: String| {
-                let _ = peregrine_core::history::delete_scan(&id);
+                let _ = aplomado_core::history::delete_scan(&id);
                 let mut h = history();
                 h.retain(|r| r.id != id);
                 history.set(h);

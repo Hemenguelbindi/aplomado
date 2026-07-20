@@ -1,7 +1,7 @@
-//! Shared data models for Peregrine Vulnerability Scanner.
+//! Shared data models for Aplomado Vulnerability Scanner.
 //!
 //! This crate is the **single source of truth** for all data types
-//! shared across `peregrine-core`, `ui`, `api`, `web`, `desktop`, and
+//! shared across `aplomado-core`, `ui`, `api`, `web`, `desktop`, and
 //! `mobile`.  No crate in the workspace should define its own version
 //! of these types — import them from here instead.
 //!
