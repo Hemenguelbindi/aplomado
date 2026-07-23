@@ -2,6 +2,9 @@
 name = "aplomado-types"
 version = "0.1.0"
 edition = "2021"
+description = "Shared type definitions for Aplomado network scanner"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

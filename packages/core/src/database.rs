@@ -19,7 +19,11 @@ pub struct SessionData {
     pub status: String, // "Idle" | "Scanning" | "Done"
     pub created_at: String,
     pub updated_at: String,
-    pub hosts_json: String, // сериализованные HostInfo
+    /// Хосты напрямую (не JSON-строка) — предотвращает двойную сериализацию.
+    /// `#[serde(default)]` для обратной совместимости со старыми записями,
+    /// где поле называлось `hosts_json` и было строкой.
+    #[serde(default)]
+    pub hosts: Vec<aplomado_types::HostInfo>,
     pub duration_secs: u64,
 }
 

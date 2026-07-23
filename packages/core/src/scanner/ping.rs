@@ -19,9 +19,9 @@ pub async fn is_alive(ip: IpAddr) -> bool {
 pub async fn probe_host(ip: IpAddr) -> HostReachability {
     let futs = PROBE_PORTS.iter().map(|&port| probe_port(ip, port));
     let results: Vec<HostReachability> = futures::future::join_all(futs).await;
-    if results.iter().any(|r| *r == HostReachability::Alive) {
+    if results.contains(&HostReachability::Alive) {
         HostReachability::Alive
-    } else if results.iter().any(|r| *r == HostReachability::PortClosed) {
+    } else if results.contains(&HostReachability::PortClosed) {
         HostReachability::PortClosed
     } else {
         HostReachability::NoResponse

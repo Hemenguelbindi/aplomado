@@ -25,6 +25,18 @@ pub async fn handle_scan_success(
 
     let hosts_alive = hosts.iter().filter(|h| h.alive).count() as u32;
     let record = build_scan_record(&hosts, &targets_str, duration_secs);
+    // Save scan record to history — use spawn_blocking on native (tokio) to
+    // avoid blocking the async executor with synchronous SQLite writes.
+    #[cfg(feature = "scan-engine")]
+    {
+        let rec = record.clone();
+        tokio::task::spawn_blocking(move || {
+            aplomado_core::history::save_scan(&rec).ok();
+        })
+        .await
+        .ok();
+    }
+    #[cfg(not(feature = "scan-engine"))]
     aplomado_core::history::save_scan(&record).ok();
 
     let mut h = history();

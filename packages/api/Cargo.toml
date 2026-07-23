@@ -2,6 +2,9 @@
 name = "api"
 version = "0.1.0"
 edition = "2021"
+description = "Server-side API (Dioxus server functions) for Aplomado"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 dioxus = { workspace = true, features = ["fullstack"] }

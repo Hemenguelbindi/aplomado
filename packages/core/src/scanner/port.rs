@@ -17,10 +17,7 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 const MAX_CONCURRENT_PORTS: usize = 100;
 
 /// Публичные порты по умолчанию
-pub const COMMON_PORTS: &[u16] = &[
-    21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 445, 993, 995, 1433, 1521, 2049, 3306,
-    3389, 5432, 5900, 6379, 8080, 8443, 9090, 9200, 27017,
-];
+pub use aplomado_types::COMMON_PORTS;
 
 /// Сканировать один хост на указанных портах (параллельно, с лимитом)
 pub async fn scan_host(ip: IpAddr, ports: &[u16]) -> Vec<PortInfo> {
@@ -60,6 +57,9 @@ pub async fn scan_host(ip: IpAddr, ports: &[u16]) -> Vec<PortInfo> {
 
 /// Проверить один порт
 pub async fn scan_port(ip: IpAddr, port: u16) -> PortState {
+    if port == 0 {
+        return PortState::Closed;
+    }
     match tokio::time::timeout(CONNECT_TIMEOUT, TcpStream::connect((ip, port))).await {
         Ok(Ok(_stream)) => PortState::Open,
         Ok(Err(_)) => PortState::Closed,

@@ -135,7 +135,7 @@ pub fn extract_version(service: &str, banner: &str) -> Option<String> {
             if s.len() < 60 {
                 Some(s.to_string())
             } else {
-                Some(format!("{}...", &s[..60]))
+                Some(format!("{}...", s.chars().take(60).collect::<String>()))
             }
         }
     }
@@ -145,7 +145,18 @@ pub fn extract_version(service: &str, banner: &str) -> Option<String> {
 /// Returns only the numeric portion (without service prefixes).
 pub fn extract_version_num(service: &str, banner: &str) -> Option<String> {
     match service {
-        "ssh" => banner.split('_').nth(1).map(|v| v.to_string()),
+        "ssh" => banner.split('_').nth(1).and_then(|v| {
+            let end = v
+                .char_indices()
+                .find(|(_, c)| !c.is_ascii_digit() && *c != '.' && *c != 'p')
+                .map(|(i, _)| i)
+                .unwrap_or(v.len());
+            if end > 0 {
+                Some(v[..end].to_string())
+            } else {
+                None
+            }
+        }),
         "http" | "https" | "http-proxy" | "https-alt" | "http-alt" => {
             let s = if banner.to_lowercase().starts_with("server:") {
                 banner.trim_start_matches("Server:").trim()

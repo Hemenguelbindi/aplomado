@@ -15,7 +15,7 @@ pub fn Scan() -> Element {
     let mut scan_task: Signal<Option<dioxus::core::Task>> = use_signal(|| None);
 
     let session = current_session()
-        .and_then(|s| if s.id.is_empty() { None } else { Some(s) })
+        .filter(|s| !s.id.is_empty())
         .unwrap_or_else(|| {
             let s = create_default_session();
             current_session.set(Some(s.clone()));
@@ -42,8 +42,14 @@ pub fn Scan() -> Element {
                     let mut found = Vec::new();
                     let start_time = std::time::Instant::now();
 
+                    let policy = aplomado_core::scanner::policy::ScanPolicy::default();
                     for (i, target) in targets.iter().enumerate() {
-                        let ips = aplomado_core::scanner::resolve_targets(target).unwrap_or_default();
+                        let ips = aplomado_core::scanner::resolve_targets_async(target)
+                            .await
+                            .unwrap_or_default()
+                            .into_iter()
+                            .filter(|&ip| policy.is_allowed(ip))
+                            .collect::<Vec<_>>();
                         for ip in ips {
                             let current = (i + 1) as u32;
                             status.set(ScanStatusUi::Scanning { current, total });

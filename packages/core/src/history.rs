@@ -139,7 +139,7 @@ pub fn diff_scans(a: &ScanRecord, b: &ScanRecord) -> ScanDiff {
             b_host.ports.iter().map(|p| (p.port, p)).collect();
 
         // Ports added in b
-        for (&port, _) in &b_ports {
+        for &port in b_ports.keys() {
             if !a_ports.contains_key(&port) {
                 port_changes.push(PortChange {
                     host_ip: ip.to_string(),
@@ -150,7 +150,7 @@ pub fn diff_scans(a: &ScanRecord, b: &ScanRecord) -> ScanDiff {
         }
 
         // Ports removed from b
-        for (&port, _) in &a_ports {
+        for &port in a_ports.keys() {
             if !b_ports.contains_key(&port) {
                 port_changes.push(PortChange {
                     host_ip: ip.to_string(),
@@ -240,7 +240,7 @@ pub fn save_scan(record: &ScanRecord) -> std::io::Result<()> {
     #[cfg(feature = "database")]
     {
         crate::database::save_scan(record).map_err(|e| std::io::Error::other(e.to_string()))?;
-        return Ok(());
+        Ok(())
     }
     #[cfg(not(feature = "database"))]
     {

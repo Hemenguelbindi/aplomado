@@ -312,7 +312,8 @@ fn show_scan_details(id: Option<String>, last: bool) {
 }
 
 fn export_report(id: Option<String>, last: bool, format: &str) {
-    let fmt = aplomado_core::export::ExportFormat::from_str(format)
+    let fmt: aplomado_core::export::ExportFormat = format
+        .parse()
         .expect("Unsupported format. Use: html, json, txt");
     let records = aplomado_core::history::load_history();
     let record = if last {

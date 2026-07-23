@@ -2,6 +2,9 @@
 name = "web"
 version = "0.1.0"
 edition = "2021"
+description = "Aplomado web app (WASM client entry point)"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 dioxus = { workspace = true, features = ["router", "fullstack"] }

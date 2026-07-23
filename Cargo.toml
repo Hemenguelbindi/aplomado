@@ -10,6 +10,10 @@ members = [
     "packages/core",
 ]
 
+[workspace.package]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Hemenguelbindi/aplomado"
+
 [workspace.dependencies]
 dioxus = { version = "0.7.1" }
 serde = { version = "1", features = ["derive"] }

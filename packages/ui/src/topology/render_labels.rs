@@ -5,6 +5,7 @@ use dioxus::prelude::*;
 ///
 /// Can be used independently when labels are rendered outside node groups,
 /// or left unused when labels are embedded inside `render_nodes`.
+#[allow(dead_code)]
 pub fn render_labels(nodes: &[LayoutNode], show_labels: bool) -> Element {
     if !show_labels {
         return rsx! {};

@@ -2,6 +2,7 @@ pub mod controls;
 pub mod parse;
 pub mod port_input;
 pub mod preset_selector;
+#[allow(clippy::module_inception)]
 mod scan_form;
 pub mod session_name;
 pub mod status_display;

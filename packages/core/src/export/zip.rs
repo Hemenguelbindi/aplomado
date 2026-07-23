@@ -4,8 +4,7 @@ use std::path::Path;
 /// Create a ZIP archive containing HTML, JSON, and TXT reports for each record.
 #[cfg(not(feature = "export"))]
 pub fn save_reports_zip(_records: &[ScanRecord], _output_path: &Path) -> std::io::Result<()> {
-    Err(std::io::Error::new(
-        std::io::ErrorKind::InvalidInput,
+    Err(std::io::Error::other(
         "ZIP export requires the 'export' feature",
     ))
 }
@@ -32,18 +31,18 @@ pub fn save_reports_zip(records: &[ScanRecord], output_path: &Path) -> std::io::
         let base_name = sanitize_filename(&record.id);
         for (ext, content) in [("html", &html), ("json", &json), ("txt", &txt)] {
             let entry_path = format!("{base_name}.{ext}");
-            zip_writer.start_file(&entry_path, options).map_err(|e| {
-                std::io::Error::new(std::io::ErrorKind::Other, format!("ZIP entry error: {e}"))
-            })?;
-            zip_writer.write_all(content.as_bytes()).map_err(|e| {
-                std::io::Error::new(std::io::ErrorKind::Other, format!("ZIP write error: {e}"))
-            })?;
+            zip_writer
+                .start_file(&entry_path, options)
+                .map_err(|e| std::io::Error::other(format!("ZIP entry error: {e}")))?;
+            zip_writer
+                .write_all(content.as_bytes())
+                .map_err(|e| std::io::Error::other(format!("ZIP write error: {e}")))?;
         }
     }
 
-    zip_writer.finish().map_err(|e| {
-        std::io::Error::new(std::io::ErrorKind::Other, format!("ZIP finish error: {e}"))
-    })?;
+    zip_writer
+        .finish()
+        .map_err(|e| std::io::Error::other(format!("ZIP finish error: {e}")))?;
     Ok(())
 }
 

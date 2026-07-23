@@ -2,6 +2,9 @@
 name = "aplomado"
 version = "0.1.0"
 edition = "2021"
+description = "Aplomado network scanner - desktop app"
+license.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "aplomado"

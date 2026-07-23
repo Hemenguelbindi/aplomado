@@ -67,9 +67,48 @@ pub async fn run_scan(req: ScanRequest) -> Result<Vec<HostInfo>, ServerFnError> 
     }
 }
 
-/// Maximum total IPs across all targets in a single scan request.
+/// Execute a blocking database operation on the blocking thread pool.
+/// The closure may return `Box<dyn Error>` (non-Send); we convert to `String`
+/// inside `spawn_blocking` so the tokio-required `Send` bound is satisfied.
 #[cfg(feature = "server")]
-const MAX_TOTAL_IPS: usize = 65536;
+async fn db_call<T, F>(f: F) -> Result<T, ServerFnError>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, Box<dyn std::error::Error>> + Send + 'static,
+{
+    let result = tokio::task::spawn_blocking(move || f().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| ServerFnError::new(format!("spawn_blocking join error: {e}")))?;
+    result.map_err(ServerFnError::new)
+}
+
+/// Check API key authentication.
+/// Reads `APLOMADO_API_KEY` env var. If set and non-empty, validates the
+/// `Authorization: Bearer <key>` header. If not set, auth is skipped (dev mode).
+#[cfg(feature = "server")]
+async fn check_auth() -> Result<(), ServerFnError> {
+    let expected = std::env::var("APLOMADO_API_KEY").unwrap_or_default();
+    if expected.is_empty() {
+        return Ok(());
+    }
+
+    let headers = dioxus_fullstack::FullstackContext::extract::<dioxus_fullstack::HeaderMap, _>()
+        .await
+        .map_err(|_| ServerFnError::new("Failed to extract request headers"))?;
+
+    let auth = headers
+        .get("Authorization")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+
+    if auth == format!("Bearer {expected}") || auth == expected {
+        Ok(())
+    } else {
+        Err(ServerFnError::new(
+            "Unauthorized: invalid or missing API key",
+        ))
+    }
+}
 
 /// Maximum number of concurrent host scans.
 #[cfg(feature = "server")]
@@ -85,13 +124,13 @@ struct ValidatedScanRequest {
 /// Validate and resolve a raw scan request.
 ///
 /// Checks performed:
-/// - All target strings are resolvable (CIDR, IP, hostname)
+/// - All target strings are resolvable (CIDR, IP, hostname) using async DNS
 /// - All ports are in 1-65535
 /// - Special/denied addresses (loopback, multicast, etc.) are excluded via `ScanPolicy`
 /// - Duplicate IPs are removed
 /// - Total IPs do not exceed policy limit
 #[cfg(feature = "server")]
-fn validate_scan_request(req: &ScanRequest) -> Result<ValidatedScanRequest, ServerFnError> {
+async fn validate_scan_request(req: &ScanRequest) -> Result<ValidatedScanRequest, ServerFnError> {
     let policy = aplomado_core::scanner::policy::ScanPolicy::default();
 
     // Validate ports
@@ -122,7 +161,7 @@ fn validate_scan_request(req: &ScanRequest) -> Result<ValidatedScanRequest, Serv
             ));
             break;
         }
-        match aplomado_core::scanner::resolve_target_str(target_str) {
+        match aplomado_core::scanner::resolve_target_str_async(target_str).await {
             Ok(ips) => {
                 for ip in ips {
                     if !policy.is_allowed(ip) {
@@ -158,10 +197,11 @@ fn validate_scan_request(req: &ScanRequest) -> Result<ValidatedScanRequest, Serv
 
 #[cfg(feature = "server")]
 async fn run_scan_on_server(req: ScanRequest) -> Result<Vec<HostInfo>, ServerFnError> {
+    check_auth().await?;
     init_server();
 
-    // Validate and resolve the request
-    let validated = validate_scan_request(&req)?;
+    // Validate and resolve the request (async DNS)
+    let validated = validate_scan_request(&req).await?;
 
     // Scan with bounded concurrency using futures::stream::buffer_unordered.
     // This avoids creating N tokio tasks upfront (one per IP).
@@ -195,6 +235,7 @@ async fn run_scan_on_server(req: ScanRequest) -> Result<Vec<HostInfo>, ServerFnE
 pub async fn create_session(name: String) -> Result<String, ServerFnError> {
     #[cfg(feature = "server")]
     {
+        check_auth().await?;
         init_server();
         let id = uuid::Uuid::new_v4().to_string();
         let now = chrono::Utc::now().to_rfc3339();
@@ -205,11 +246,10 @@ pub async fn create_session(name: String) -> Result<String, ServerFnError> {
             status: "Idle".into(),
             created_at: now.clone(),
             updated_at: now,
-            hosts_json: "[]".into(),
+            hosts: vec![],
             duration_secs: 0,
         };
-        aplomado_core::database::save_session(&session)
-            .map_err(|e| ServerFnError::new(e.to_string()))?;
+        db_call(move || aplomado_core::database::save_session(&session)).await?;
         Ok(id)
     }
     #[cfg(not(feature = "server"))]
@@ -224,11 +264,11 @@ pub async fn create_session(name: String) -> Result<String, ServerFnError> {
 pub async fn save_session(data: String) -> Result<(), ServerFnError> {
     #[cfg(feature = "server")]
     {
+        check_auth().await?;
         init_server();
         let session: aplomado_core::database::SessionData =
             serde_json::from_str(&data).map_err(|e| ServerFnError::new(e.to_string()))?;
-        aplomado_core::database::save_session(&session)
-            .map_err(|e| ServerFnError::new(e.to_string()))?;
+        db_call(move || aplomado_core::database::save_session(&session)).await?;
         Ok(())
     }
     #[cfg(not(feature = "server"))]
@@ -249,7 +289,7 @@ pub struct SessionTargetSummary {
     pub hosts_count: u32,
 }
 
-/// Response type for session retrieval — avoids double-serialising `hosts_json`.
+/// Response type for session retrieval — `hosts` is stored directly (not double-serialised).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionResponse {
     pub id: String,
@@ -265,7 +305,6 @@ pub struct SessionResponse {
 #[cfg(feature = "server")]
 impl From<aplomado_core::database::SessionData> for SessionResponse {
     fn from(s: aplomado_core::database::SessionData) -> Self {
-        let hosts: Vec<HostInfo> = serde_json::from_str(&s.hosts_json).unwrap_or_default();
         let targets = s
             .targets
             .into_iter()
@@ -285,7 +324,7 @@ impl From<aplomado_core::database::SessionData> for SessionResponse {
             status: s.status,
             created_at: s.created_at,
             updated_at: s.updated_at,
-            hosts,
+            hosts: s.hosts,
             duration_secs: s.duration_secs,
         }
     }
@@ -296,11 +335,12 @@ impl From<aplomado_core::database::SessionData> for SessionResponse {
 pub async fn get_session(id: String) -> Result<Option<SessionResponse>, ServerFnError> {
     #[cfg(feature = "server")]
     {
+        check_auth().await?;
         init_server();
-        match aplomado_core::database::load_session(&id) {
-            Ok(Some(s)) => Ok(Some(s.into())),
-            Ok(None) => Ok(None),
-            Err(e) => Err(ServerFnError::new(e.to_string())),
+        let result = db_call(move || aplomado_core::database::load_session(&id)).await?;
+        match result {
+            Some(s) => Ok(Some(s.into())),
+            None => Ok(None),
         }
     }
     #[cfg(not(feature = "server"))]
@@ -315,9 +355,9 @@ pub async fn get_session(id: String) -> Result<Option<SessionResponse>, ServerFn
 pub async fn list_sessions() -> Result<Vec<SessionResponse>, ServerFnError> {
     #[cfg(feature = "server")]
     {
+        check_auth().await?;
         init_server();
-        let sessions = aplomado_core::database::list_sessions()
-            .map_err(|e| ServerFnError::new(e.to_string()))?;
+        let sessions = db_call(|| aplomado_core::database::list_sessions()).await?;
         Ok(sessions.into_iter().map(|s| s.into()).collect())
     }
     #[cfg(not(feature = "server"))]
@@ -331,8 +371,8 @@ pub async fn list_sessions() -> Result<Vec<SessionResponse>, ServerFnError> {
 pub async fn delete_session(id: String) -> Result<(), ServerFnError> {
     #[cfg(feature = "server")]
     {
-        aplomado_core::database::delete_session(&id)
-            .map_err(|e| ServerFnError::new(e.to_string()))?;
+        check_auth().await?;
+        db_call(move || aplomado_core::database::delete_session(&id)).await?;
         Ok(())
     }
     #[cfg(not(feature = "server"))]
@@ -365,8 +405,10 @@ pub struct LastScanData {
 
 #[cfg(feature = "server")]
 async fn get_last_scan_impl() -> Result<Option<LastScanData>, ServerFnError> {
+    check_auth().await?;
     init_server();
-    match aplomado_core::history::load_last_scan() {
+    let record = db_call(|| Ok(aplomado_core::history::load_last_scan())).await?;
+    match record {
         Some(record) => {
             let hosts: Vec<HostInfo> = record.hosts.into_iter().map(|h| h.into()).collect();
             Ok(Some(LastScanData {

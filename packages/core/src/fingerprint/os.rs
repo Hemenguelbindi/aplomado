@@ -79,9 +79,7 @@ pub fn guess_os(ports: &[(u16, String, Option<String>)]) -> Option<String> {
             Some("Likely Windows (RDP + RPC)".to_string())
         } else if linux_count >= 3 {
             Some("Likely Linux".to_string())
-        } else if win_count >= 2 {
-            Some("Likely Windows".to_string())
-        } else if port_set.contains(&3389) {
+        } else if port_set.contains(&3389) || win_count >= 2 {
             Some("Likely Windows".to_string())
         } else if port_set.contains(&22) {
             Some("Likely Linux/Unix".to_string())

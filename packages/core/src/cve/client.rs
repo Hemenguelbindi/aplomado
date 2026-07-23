@@ -1,13 +1,16 @@
 use std::path::Path;
 
-use crate::cve::database::{CveDatabase, CveEntry, CveSeverity, VersionRange, VulnerabilityFix};
+use crate::cve::database::CveDatabase;
+
+#[cfg(feature = "database")]
+use crate::cve::database::{CveEntry, CveSeverity, VersionRange, VulnerabilityFix};
 
 /// Загрузить CVE базу из SQLite.
 /// Если БД не существует или произошла ошибка — возвращается пустая база.
-pub fn load_cve_db(path: &Path) -> CveDatabase {
+pub fn load_cve_db(_path: &Path) -> CveDatabase {
     #[cfg(feature = "database")]
     {
-        let fixes = load_all_fixes(path);
+        let fixes = load_all_fixes(_path);
         if !fixes.is_empty() {
             return fixes_to_database(&fixes);
         }
@@ -16,14 +19,14 @@ pub fn load_cve_db(path: &Path) -> CveDatabase {
 }
 
 /// Сохранить CVE базу в SQLite (перезаписывает все записи).
-pub fn save_cve_db(db: &CveDatabase, path: &Path) -> std::io::Result<()> {
-    if let Some(parent) = path.parent() {
+pub fn save_cve_db(_db: &CveDatabase, _path: &Path) -> std::io::Result<()> {
+    if let Some(parent) = _path.parent() {
         std::fs::create_dir_all(parent)?;
     }
     #[cfg(feature = "database")]
     {
-        let fixes = database_to_fixes(db);
-        save_fixes(path, &fixes).map_err(std::io::Error::other)?;
+        let fixes = database_to_fixes(_db);
+        save_fixes(_path, &fixes).map_err(std::io::Error::other)?;
     }
     Ok(())
 }

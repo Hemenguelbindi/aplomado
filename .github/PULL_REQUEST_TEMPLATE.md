@@ -4,7 +4,7 @@
 
 ## Связанные issue
 
-Closes #ISSUSE_NUMBER
+Closes #ISSUE_NUMBER
 
 ## Тип изменений
 

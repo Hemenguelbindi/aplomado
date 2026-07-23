@@ -1,5 +1,14 @@
 use crate::history::ScanRecord;
 
+/// Escape HTML special characters to prevent XSS in generated reports.
+fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
+}
+
 /// Generate an HTML report for a single scan record.
 pub fn export_html(record: &ScanRecord) -> String {
     let mut html = format!(
@@ -42,12 +51,12 @@ th {{ color: #8b949e; }}
 
         html.push_str(&format!(
             "<tr><td>{}</td><td>{}</td><td>{}</td><td {}>{}</td><td>{}</td></tr>",
-            host.ip,
-            host.hostname.as_deref().unwrap_or("—"),
-            host.os_guess.as_deref().unwrap_or("—"),
+            html_escape(&host.ip),
+            html_escape(host.hostname.as_deref().unwrap_or("—")),
+            html_escape(host.os_guess.as_deref().unwrap_or("—")),
             status,
             if host.alive { "Alive" } else { "Down" },
-            ports,
+            html_escape(&ports),
         ));
     }
 
@@ -120,12 +129,12 @@ th {{ color: #8b949e; }}
 
             html.push_str(&format!(
                 "<tr><td>{}</td><td>{}</td><td>{}</td><td class=\"{}\">{}</td><td>{}</td></tr>",
-                host.ip,
-                host.hostname.as_deref().unwrap_or("—"),
-                host.os_guess.as_deref().unwrap_or("—"),
+                html_escape(&host.ip),
+                html_escape(host.hostname.as_deref().unwrap_or("—")),
+                html_escape(host.os_guess.as_deref().unwrap_or("—")),
                 status_class,
                 if host.alive { "Alive" } else { "Down" },
-                ports,
+                html_escape(&ports),
             ));
         }
 

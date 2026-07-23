@@ -91,7 +91,7 @@ pub fn calculate_stats(hosts: &[HostInfo], history: &[ScanRecord]) -> DashboardS
         }
     }
     let mut top_services: Vec<(String, usize)> = service_counts.into_iter().collect();
-    top_services.sort_by(|a, b| b.1.cmp(&a.1));
+    top_services.sort_by_key(|k| std::cmp::Reverse(k.1));
     top_services.truncate(5);
 
     DashboardStats {

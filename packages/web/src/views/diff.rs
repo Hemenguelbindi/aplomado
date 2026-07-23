@@ -47,7 +47,7 @@ pub fn Diff() -> Element {
                             {records.iter().map(|r| {
                                 let id = r.id.clone();
                                 let label = format!("{} | {} targets | {} hosts",
-                                    &r.timestamp[..19.min(r.timestamp.len())].replace("T", " "),
+                                    r.timestamp[..19.min(r.timestamp.len())].replace("T", " "),
                                     r.targets.join(", "),
                                     r.hosts_alive
                                 );

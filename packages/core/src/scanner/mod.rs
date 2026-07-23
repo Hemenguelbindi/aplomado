@@ -156,6 +156,57 @@ pub fn resolve_target_str(s: &str) -> Result<Vec<IpAddr>, TargetResolveError> {
     }
 }
 
+/// Async: resolve a `ScanTarget` to IP addresses using `tokio::net::lookup_host`.
+/// Non-blocking — runs DNS resolution on Tokio's async reactor.
+#[cfg(feature = "scanner")]
+pub async fn resolve_targets_async(
+    target: &ScanTarget,
+) -> Result<Vec<IpAddr>, TargetResolveError> {
+    match target {
+        ScanTarget::Ip(ip) => Ok(vec![*ip]),
+        ScanTarget::Hostname(h) => {
+            let addrs: Vec<IpAddr> = tokio::net::lookup_host((h.as_str(), 0))
+                .await
+                .map_err(|_| TargetResolveError::DnsResolutionFailed(h.clone()))?
+                .map(|s| s.ip())
+                .collect();
+            if addrs.is_empty() {
+                Err(TargetResolveError::NoAddressesResolved(h.clone()))
+            } else {
+                Ok(addrs)
+            }
+        }
+        ScanTarget::Cidr(c) => expand_cidr(c),
+        ScanTarget::Range(start, end) => expand_range(&start.to_string(), &end.to_string()),
+    }
+}
+
+/// Async: resolve a raw string target to IP addresses using `tokio::net::lookup_host`.
+/// Non-blocking — runs DNS resolution on Tokio's async reactor.
+#[cfg(feature = "scanner")]
+pub async fn resolve_target_str_async(s: &str) -> Result<Vec<IpAddr>, TargetResolveError> {
+    let s = s.trim();
+    if s.is_empty() {
+        return Err(TargetResolveError::InvalidTarget("empty string".into()));
+    }
+    if let Ok(ip) = s.parse::<IpAddr>() {
+        return Ok(vec![ip]);
+    }
+    if s.contains('/') {
+        return expand_cidr(s);
+    }
+    let addrs: Vec<IpAddr> = tokio::net::lookup_host((s, 0u16))
+        .await
+        .map_err(|_| TargetResolveError::DnsResolutionFailed(s.to_string()))?
+        .map(|a| a.ip())
+        .collect();
+    if addrs.is_empty() {
+        Err(TargetResolveError::NoAddressesResolved(s.to_string()))
+    } else {
+        Ok(addrs)
+    }
+}
+
 /// Развернуть диапазон IP вида "10.2.2.1-10.2.2.254"
 pub fn expand_range(start_str: &str, end_str: &str) -> Result<Vec<IpAddr>, TargetResolveError> {
     let start: u32 = start_str

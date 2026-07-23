@@ -35,7 +35,7 @@ pub fn Scan() -> Element {
     let mut scan_task: Signal<Option<dioxus::core::Task>> = use_signal(|| None);
 
     let session = current_session()
-        .and_then(|s| if s.id.is_empty() { None } else { Some(s) })
+        .filter(|s| !s.id.is_empty())
         .unwrap_or_else(|| {
             let s = create_default_session();
             current_session.set(Some(s.clone()));

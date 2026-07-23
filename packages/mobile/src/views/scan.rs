@@ -47,8 +47,13 @@ pub fn Scan() -> Element {
                         status.set(ScanStatusUi::Scanning { current: 0, total });
                         let mut found = Vec::new();
 
+                        let policy = aplomado_core::scanner::policy::ScanPolicy::default();
                         for (i, target) in cfg.targets.iter().enumerate() {
-                            let ips = aplomado_core::scanner::resolve_targets(target).unwrap_or_default();
+                            let ips = aplomado_core::scanner::resolve_targets(target)
+                                .unwrap_or_default()
+                                .into_iter()
+                                .filter(|&ip| policy.is_allowed(ip))
+                                .collect::<Vec<_>>();
                             for ip in ips {
                                 status.set(ScanStatusUi::Scanning {
                                     current: (i + 1) as u32,

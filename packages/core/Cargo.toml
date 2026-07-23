@@ -2,6 +2,9 @@
 name = "aplomado-core"
 version = "0.1.0"
 edition = "2021"
+description = "Core scanning engine and data layer for Aplomado network scanner"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 futures = "0.3"

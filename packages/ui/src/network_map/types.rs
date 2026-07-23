@@ -97,9 +97,11 @@ pub fn os_icon(os: &str) -> IconName {
     let l = os.to_lowercase();
     if l.contains("linux") || l.contains("ubuntu") || l.contains("debian") {
         IconName::Terminal
-    } else if l.contains("windows") {
-        IconName::Monitor
-    } else if l.contains("macos") || l.contains("darwin") || l.contains("mac") {
+    } else if l.contains("windows")
+        || l.contains("macos")
+        || l.contains("darwin")
+        || l.contains("mac")
+    {
         IconName::Monitor
     } else if l.contains("cisco") || l.contains("router") || l.contains("switch") {
         IconName::Globe

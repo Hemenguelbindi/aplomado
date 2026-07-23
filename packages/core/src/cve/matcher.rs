@@ -5,9 +5,20 @@ use std::sync::OnceLock;
 static CVE_DB: OnceLock<std::sync::RwLock<CveDatabase>> = OnceLock::new();
 
 /// Инициализировать глобальную CVE базу из SQLite.
+/// Первый вызов создаёт OnceLock, последующие перезаписывают данные.
 pub fn init_cve_db(path: &std::path::Path) {
     let db = crate::cve::client::load_cve_db(path);
-    CVE_DB.set(std::sync::RwLock::new(db)).ok();
+    match CVE_DB.get() {
+        Some(lock) => {
+            // Уже инициализировано — обновляем in-place
+            if let Ok(mut guard) = lock.write() {
+                *guard = db;
+            }
+        }
+        None => {
+            let _ = CVE_DB.set(std::sync::RwLock::new(db));
+        }
+    }
 }
 
 /// Получить чтение из глобальной CVE базы.

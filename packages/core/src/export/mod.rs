@@ -1,6 +1,7 @@
 use crate::history::ScanRecord;
 use std::io;
 use std::path::Path;
+use std::str::FromStr;
 
 mod csv;
 mod html;
@@ -19,19 +20,22 @@ pub enum ExportFormat {
     Zip,
 }
 
-impl ExportFormat {
-    /// Parse format from a string (case-insensitive).
-    pub fn from_str(s: &str) -> Option<Self> {
+impl FromStr for ExportFormat {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "html" => Some(Self::Html),
-            "json" => Some(Self::Json),
-            "txt" | "text" => Some(Self::Txt),
-            "csv" => Some(Self::Csv),
-            "zip" => Some(Self::Zip),
-            _ => None,
+            "html" => Ok(Self::Html),
+            "json" => Ok(Self::Json),
+            "txt" | "text" => Ok(Self::Txt),
+            "csv" => Ok(Self::Csv),
+            "zip" => Ok(Self::Zip),
+            _ => Err(()),
         }
     }
+}
 
+impl ExportFormat {
     /// Return the file extension for this format (without dot).
     pub fn extension(&self) -> &'static str {
         match self {
@@ -109,12 +113,8 @@ pub fn save_reports(
 }
 
 fn save_reports_json(records: &[ScanRecord], output_path: &Path) -> io::Result<()> {
-    let json = serde_json::to_string_pretty(records).map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("JSON serialization error: {e}"),
-        )
-    })?;
+    let json = serde_json::to_string_pretty(records)
+        .map_err(|e| io::Error::other(format!("JSON serialization error: {e}")))?;
     std::fs::write(output_path, &json)
 }
 
