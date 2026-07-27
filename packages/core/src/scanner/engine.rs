@@ -1,6 +1,10 @@
 use std::net::IpAddr;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
+
+use futures::stream::FuturesUnordered;
+use futures::StreamExt;
 
 use crate::scanner::config::ScanConfig;
 use crate::scanner::model::HostInfo;
@@ -128,6 +132,60 @@ async fn scan_with_strategy_inner(
     }
 }
 
+/// Scan multiple hosts concurrently, bounded by `config.max_concurrent_hosts`.
+pub async fn scan_hosts(
+    ips: &[IpAddr],
+    ports: &[u16],
+    config: &ScanConfig,
+    progress_tx: Option<tokio::sync::watch::Sender<Option<ScanProgress>>>,
+) -> Vec<HostInfo> {
+    let total = ips.len() as u32;
+
+    if let Some(ref tx) = progress_tx {
+        let _ = tx.send(Some(ScanProgress {
+            total_hosts: total,
+            scanned_hosts: 0,
+            current_host: String::new(),
+            found_ports: 0,
+            elapsed_secs: 0,
+            phase: ScanPhase::Ping,
+        }));
+    }
+
+    let strategy = TcpConnectStrategy::new(config);
+    let semaphore = Arc::new(tokio::sync::Semaphore::new(config.max_concurrent_hosts));
+    let scanned = Arc::new(AtomicU32::new(0));
+
+    let futs: FuturesUnordered<_> = ips
+        .iter()
+        .map(|&ip| {
+            let strat: &dyn ScanStrategy = &strategy;
+            let sem = Arc::clone(&semaphore);
+            let tx = progress_tx.clone();
+            let scanned = Arc::clone(&scanned);
+            let ports = ports.to_vec();
+            async move {
+                let _permit = sem.acquire().await.unwrap();
+                let host = scan_with_strategy(strat, ip, &ports, config, tx.clone()).await;
+                let s = scanned.fetch_add(1, Ordering::SeqCst) + 1;
+                if let Some(ref tx) = tx {
+                    let _ = tx.send(Some(ScanProgress {
+                        total_hosts: total,
+                        scanned_hosts: s,
+                        current_host: ip.to_string(),
+                        found_ports: host.ports.len() as u32,
+                        elapsed_secs: 0,
+                        phase: ScanPhase::Done,
+                    }));
+                }
+                host
+            }
+        })
+        .collect();
+
+    futs.collect().await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,5 +212,51 @@ mod tests {
         let host = scan_single_target(ip, &[80], None).await;
         assert_eq!(host.ip, ip);
         assert!(!host.alive);
+    }
+
+    #[tokio::test]
+    async fn test_scan_hosts_concurrent() {
+        let listener1 = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port1 = listener1.local_addr().unwrap().port();
+        let listener2 = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port2 = listener2.local_addr().unwrap().port();
+
+        let ip = IpAddr::V4(Ipv4Addr::LOCALHOST);
+        let ips = vec![ip, ip];
+        let ports = vec![port1, port2];
+        let config = ScanConfig {
+            max_concurrent_hosts: 1,
+            connect_timeout: Duration::from_secs(2),
+            ..ScanConfig::default()
+        };
+
+        let results = scan_hosts(&ips, &ports, &config, None).await;
+        assert_eq!(results.len(), 2);
+        assert!(results.iter().all(|r| r.alive));
+        drop(listener1);
+        drop(listener2);
+    }
+
+    #[tokio::test]
+    async fn test_scan_hosts_respects_semaphore() {
+        let mut listeners = Vec::new();
+        let mut ports = Vec::new();
+        for _ in 0..5 {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            ports.push(listener.local_addr().unwrap().port());
+            listeners.push(listener);
+        }
+
+        let ips = vec![IpAddr::V4(Ipv4Addr::LOCALHOST); 5];
+        let config = ScanConfig {
+            max_concurrent_hosts: 2,
+            connect_timeout: Duration::from_secs(2),
+            ..ScanConfig::default()
+        };
+
+        let results = scan_hosts(&ips, &ports, &config, None).await;
+        assert_eq!(results.len(), 5);
+        assert!(results.iter().all(|r| r.alive));
+        drop(listeners);
     }
 }
