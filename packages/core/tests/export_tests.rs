@@ -18,6 +18,7 @@ fn make_record(id: &str) -> ScanRecord {
                 hostname: Some("router.local".to_string()),
                 os_guess: Some("Linux".to_string()),
                 alive: true,
+                route: vec![],
                 ports: vec![
                     StoredPortInfo {
                         port: 80,
@@ -40,6 +41,7 @@ fn make_record(id: &str) -> ScanRecord {
                 hostname: None,
                 os_guess: None,
                 alive: false,
+                route: vec![],
                 ports: vec![],
             },
         ],
