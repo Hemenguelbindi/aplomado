@@ -45,6 +45,24 @@ pub enum PortState {
     Filtered,
 }
 
+/// Confidence level for a version detection result.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[non_exhaustive]
+pub enum VersionConfidence {
+    Exact = 100,
+    BannerExact = 90,
+    BannerRegex = 70,
+    ServiceOnly = 30,
+    Guess = 10,
+}
+
+/// A detected software version with an associated confidence level.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct VersionInfo {
+    pub value: String,
+    pub confidence: VersionConfidence,
+}
+
 // ---------------------------------------------------------------------------
 // Structs
 // ---------------------------------------------------------------------------
@@ -90,6 +108,8 @@ pub struct PortInfo {
     pub state: PortState,
     pub service_name: String,
     pub service_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version_info: Option<VersionInfo>,
     pub banner: Option<String>,
     pub cpe: Option<String>,
     pub cves: Vec<CveSummary>,
@@ -203,3 +223,49 @@ pub const VULN_PORTS: &[u16] = &[
 pub const CAMERAS_PORTS: &[u16] = &[
     80, 443, 554, 8000, 34567, 37777, 37778, 8080, 8443, 8554, 8899, 7070, 9000, 21,
 ];
+
+// ---------------------------------------------------------------------------
+// Topology types
+// ---------------------------------------------------------------------------
+
+/// Kind of a node in the hybrid topology graph.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub enum TopologyNodeKind {
+    Host,
+    RouteHop,
+    LogicalSubnet,
+}
+
+/// Kind of an edge in the hybrid topology graph.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub enum TopologyEdgeKind {
+    ConfirmedRoute,
+    LogicalSubnetMembership,
+}
+
+/// A node in the hybrid topology graph.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TopologyNode {
+    pub id: String,
+    pub kind: TopologyNodeKind,
+    pub ip: Option<IpAddr>,
+    pub label: String,
+    pub group_id: Option<String>,
+}
+
+/// An edge in the hybrid topology graph.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TopologyEdge {
+    pub source: String,
+    pub target: String,
+    pub kind: TopologyEdgeKind,
+}
+
+/// A hybrid topology graph combining traceroute ConfirmedRoute edges and
+/// logical subnet membership.  Nodes and edges are stored as sorted `Vec`s
+/// for deterministic iteration order.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TopologyGraph {
+    pub nodes: Vec<TopologyNode>,
+    pub edges: Vec<TopologyEdge>,
+}

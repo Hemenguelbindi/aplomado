@@ -24,6 +24,8 @@ pub struct StoredHostInfo {
     pub os_guess: Option<String>,
     pub alive: bool,
     pub ports: Vec<StoredPortInfo>,
+    #[serde(default)]
+    pub route: Vec<aplomado_types::Hop>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -313,6 +315,7 @@ impl From<StoredPortInfo> for aplomado_types::PortInfo {
             state: aplomado_types::PortState::Open,
             service_name: s.service,
             service_version: s.version,
+            version_info: None,
             banner: s.banner,
             cpe: None,
             cves: s.cves.into_iter().map(Into::into).collect(),
@@ -329,7 +332,7 @@ impl From<StoredHostInfo> for aplomado_types::HostInfo {
             os_guess: s.os_guess,
             ports: s.ports.into_iter().map(Into::into).collect(),
             alive: s.alive,
-            route: vec![],
+            route: s.route,
         }
     }
 }
@@ -362,6 +365,7 @@ mod tests {
             os_guess: None,
             alive,
             ports,
+            route: vec![],
         }
     }
 
@@ -663,6 +667,145 @@ mod tests {
         assert_eq!(deserialized.cves[0].id, "CVE-2024-0001");
         assert_eq!(deserialized.cves[1].severity, "MEDIUM");
         assert!((deserialized.cves[2].cvss_score - 9.8).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn host_route_roundtrip() {
+        let stored = StoredHostInfo {
+            ip: "10.0.0.1".into(),
+            hostname: None,
+            os_guess: None,
+            alive: true,
+            ports: vec![],
+            route: vec![
+                aplomado_types::Hop {
+                    hop: 1,
+                    ip: "10.0.0.1".parse().unwrap(),
+                    rtt_ms: Some(1.0),
+                },
+                aplomado_types::Hop {
+                    hop: 2,
+                    ip: "10.0.0.2".parse().unwrap(),
+                    rtt_ms: Some(2.5),
+                },
+                aplomado_types::Hop {
+                    hop: 3,
+                    ip: "10.0.0.3".parse().unwrap(),
+                    rtt_ms: None,
+                },
+            ],
+        };
+        let host: aplomado_types::HostInfo = stored.into();
+        assert_eq!(host.route.len(), 3, "route should have 3 hops");
+        assert_eq!(host.route[0].hop, 1);
+        assert_eq!(host.route[1].hop, 2);
+        assert_eq!(host.route[2].hop, 3);
+        assert_eq!(host.route[0].ip.to_string(), "10.0.0.1");
+        assert_eq!(host.route[1].ip.to_string(), "10.0.0.2");
+        assert_eq!(host.route[2].ip.to_string(), "10.0.0.3");
+        assert_eq!(host.route[0].rtt_ms, Some(1.0));
+        assert_eq!(host.route[1].rtt_ms, Some(2.5));
+        assert_eq!(host.route[2].rtt_ms, None);
+    }
+
+    #[test]
+    fn multiple_hosts_keep_independent_routes() {
+        let stored1 = StoredHostInfo {
+            ip: "10.0.0.1".into(),
+            hostname: None,
+            os_guess: None,
+            alive: true,
+            ports: vec![],
+            route: vec![
+                aplomado_types::Hop {
+                    hop: 1,
+                    ip: "10.0.0.1".parse().unwrap(),
+                    rtt_ms: Some(1.0),
+                },
+                aplomado_types::Hop {
+                    hop: 2,
+                    ip: "10.0.0.2".parse().unwrap(),
+                    rtt_ms: Some(2.0),
+                },
+                aplomado_types::Hop {
+                    hop: 3,
+                    ip: "10.0.0.3".parse().unwrap(),
+                    rtt_ms: Some(3.0),
+                },
+            ],
+        };
+        let stored2 = StoredHostInfo {
+            ip: "10.0.0.4".into(),
+            hostname: None,
+            os_guess: None,
+            alive: true,
+            ports: vec![],
+            route: vec![
+                aplomado_types::Hop {
+                    hop: 1,
+                    ip: "10.0.0.1".parse().unwrap(),
+                    rtt_ms: Some(1.0),
+                },
+                aplomado_types::Hop {
+                    hop: 2,
+                    ip: "10.0.0.2".parse().unwrap(),
+                    rtt_ms: Some(2.0),
+                },
+                aplomado_types::Hop {
+                    hop: 3,
+                    ip: "10.0.0.4".parse().unwrap(),
+                    rtt_ms: Some(4.0),
+                },
+            ],
+        };
+        let host1: aplomado_types::HostInfo = stored1.into();
+        let host2: aplomado_types::HostInfo = stored2.into();
+
+        assert_eq!(host1.route.len(), 3);
+        assert_eq!(host2.route.len(), 3);
+
+        // Host 1 route ends at 10.0.0.3
+        assert_eq!(host1.route[2].ip.to_string(), "10.0.0.3");
+        assert_eq!(host1.route[2].rtt_ms, Some(3.0));
+
+        // Host 2 route ends at 10.0.0.4
+        assert_eq!(host2.route[2].ip.to_string(), "10.0.0.4");
+        assert_eq!(host2.route[2].rtt_ms, Some(4.0));
+
+        // Shared hops A→B are independent
+        assert_eq!(host1.route[0].ip, host2.route[0].ip);
+        assert_eq!(host1.route[1].ip, host2.route[1].ip);
+    }
+
+    #[test]
+    fn empty_route_roundtrip() {
+        let stored = StoredHostInfo {
+            ip: "10.0.0.1".into(),
+            hostname: None,
+            os_guess: None,
+            alive: true,
+            ports: vec![],
+            route: vec![],
+        };
+        let host: aplomado_types::HostInfo = stored.into();
+        assert!(host.route.is_empty());
+    }
+
+    #[test]
+    fn legacy_history_without_route() {
+        let old_json = r#"{
+            "ip": "10.0.0.1",
+            "hostname": null,
+            "os_guess": null,
+            "alive": true,
+            "ports": []
+        }"#;
+        let stored: StoredHostInfo =
+            serde_json::from_str(old_json).expect("old JSON without route field must deserialize");
+        assert!(
+            stored.route.is_empty(),
+            "missing route must deserialize as empty vec"
+        );
     }
 
     #[test]
