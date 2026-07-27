@@ -40,6 +40,7 @@ pub fn build_scan_record(
                 hostname: h.hostname.clone(),
                 os_guess: h.os_guess.clone(),
                 alive: h.alive,
+                route: vec![],
                 ports: h
                     .ports
                     .iter()
