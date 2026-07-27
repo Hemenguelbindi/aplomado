@@ -14,6 +14,9 @@ pub mod port;
 #[cfg(feature = "scanner")]
 pub mod progress;
 
+#[cfg(all(test, feature = "fingerprint"))]
+pub mod test_helpers;
+
 #[cfg(feature = "scanner")]
 pub mod sanitize;
 
