@@ -5,6 +5,8 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
+use crate::scanner::sanitize::sanitize_banner;
+
 /// Ensure the rustls ring crypto provider is installed exactly once.
 /// Safe to call multiple times — subsequent calls are no-ops.
 pub fn ensure_crypto_provider() {
@@ -17,11 +19,10 @@ pub fn ensure_crypto_provider() {
 
 /// Попробовать прочитать баннер с TCP-порта
 pub async fn grab_banner(host: &str, port: u16) -> Option<String> {
-    match port {
+    let banner = match port {
         22 => ssh_banner(host).await,
         80 | 8080 | 8443 => http_banner(host, port).await,
         443 => {
-            // Сначала пробуем HTTPS, если не получилось — HTTP (fallback)
             let banner = https_banner(host, port).await;
             if banner.is_some() {
                 banner
@@ -34,7 +35,8 @@ pub async fn grab_banner(host: &str, port: u16) -> Option<String> {
         3306 => mysql_banner(host).await,
         6379 => redis_banner(host).await,
         _ => generic_banner(host, port).await,
-    }
+    };
+    banner.and_then(|s| sanitize_banner(s.as_bytes(), 1024))
 }
 
 async fn connect(host: &str, port: u16) -> Option<TcpStream> {

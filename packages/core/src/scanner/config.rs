@@ -38,6 +38,12 @@ impl ScanConfig {
             ..Default::default()
         }
     }
+
+    /// Create a default scan strategy for this configuration.
+    #[cfg(feature = "fingerprint")]
+    pub fn strategy(&self) -> Box<dyn crate::scanner::strategy::ScanStrategy> {
+        crate::scanner::strategy::default_strategy(self)
+    }
 }
 
 #[cfg(test)]

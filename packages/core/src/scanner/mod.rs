@@ -14,8 +14,14 @@ pub mod port;
 #[cfg(feature = "scanner")]
 pub mod progress;
 
+#[cfg(feature = "scanner")]
+pub mod sanitize;
+
 #[cfg(feature = "fingerprint")]
 pub mod engine;
+
+#[cfg(feature = "fingerprint")]
+pub mod strategy;
 
 use std::net::{IpAddr, Ipv4Addr, ToSocketAddrs};
 
