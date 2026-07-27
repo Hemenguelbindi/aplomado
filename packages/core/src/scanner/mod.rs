@@ -2,6 +2,11 @@ pub mod model;
 pub mod policy;
 
 #[cfg(feature = "scanner")]
+pub mod config;
+#[cfg(feature = "scanner")]
+pub mod adaptive_timeout;
+
+#[cfg(feature = "scanner")]
 pub mod ping;
 #[cfg(feature = "scanner")]
 pub mod port;
@@ -159,9 +164,7 @@ pub fn resolve_target_str(s: &str) -> Result<Vec<IpAddr>, TargetResolveError> {
 /// Async: resolve a `ScanTarget` to IP addresses using `tokio::net::lookup_host`.
 /// Non-blocking — runs DNS resolution on Tokio's async reactor.
 #[cfg(feature = "scanner")]
-pub async fn resolve_targets_async(
-    target: &ScanTarget,
-) -> Result<Vec<IpAddr>, TargetResolveError> {
+pub async fn resolve_targets_async(target: &ScanTarget) -> Result<Vec<IpAddr>, TargetResolveError> {
     match target {
         ScanTarget::Ip(ip) => Ok(vec![*ip]),
         ScanTarget::Hostname(h) => {
