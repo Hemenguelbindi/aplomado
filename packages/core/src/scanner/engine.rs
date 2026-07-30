@@ -76,11 +76,11 @@ async fn scan_with_strategy_inner(
             .collect();
         let os_guess = crate::fingerprint::os::guess_os(&ports_for_os);
 
-        if let Some(db) = crate::cve::matcher::get_cve_db() {
+        if let Some(ref db) = crate::cve::matcher::get_cve_db() {
             for port_info in &mut ports_result {
                 if let Some(ref banner) = port_info.banner {
                     let matched =
-                        crate::cve::matcher::match_cves(&db, &port_info.service_name, banner);
+                        crate::cve::matcher::match_cves(db, &port_info.service_name, banner);
                     port_info.cves = matched
                         .into_iter()
                         .map(|c| crate::scanner::model::CveSummary {

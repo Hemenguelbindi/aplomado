@@ -2,6 +2,26 @@ use crate::cve::sources::{CveSource, RawCveEntry, RawVersionRange};
 
 const NVD_BASE: &str = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 
+/// NVD API 2.0 requires at least 6 CPE fields (part:vendor:product:version)
+/// and the version field must not be `*`. Our CPEs may be truncated
+/// (e.g. `cpe:2.3:a:openbsd:openssh` — 5 fields, no version). Append `:-`
+/// to set version="any" where missing.
+fn normalize_cpe_for_nvd(cpe: &str) -> String {
+    let field_count = cpe.split(':').count();
+    if field_count < 6 {
+        // Add version=NA (-) and remaining wildcards for full 13-field CPE
+        let suffix_count = 13 - field_count;
+        let mut result = cpe.to_string();
+        for i in 0..suffix_count {
+            result.push(':');
+            result.push(if i == 0 { '-' } else { '*' });
+        }
+        result
+    } else {
+        cpe.to_string()
+    }
+}
+
 /// Fetch CVEs for a given CPE from the NVD API 2.0.
 /// Rate-limited to 5 requests per 30 seconds (free tier).
 pub async fn fetch_cves_for_cpe(
@@ -9,12 +29,17 @@ pub async fn fetch_cves_for_cpe(
     service: &str,
     cpe: &str,
 ) -> Vec<RawCveEntry> {
-    let url = format!(
-        "{}/?cpeName={}&noRejected&resultsPerPage=200",
-        NVD_BASE, cpe
-    );
+    let full_cpe = normalize_cpe_for_nvd(cpe);
 
-    let resp = match client.get(&url).send().await {
+    let resp = match client
+        .get(NVD_BASE)
+        .query(&[
+            ("cpeName", full_cpe.as_str()),
+            ("resultsPerPage", "200"),
+        ])
+        .send()
+        .await
+    {
         Ok(r) if r.status().is_success() => r,
         Ok(r) => {
             eprintln!("[aplomado] NVD API returned {} for {}", r.status(), cpe);
