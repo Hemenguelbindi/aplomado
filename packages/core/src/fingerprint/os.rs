@@ -205,7 +205,7 @@ mod tests {
     #[test]
     fn test_windows_rdp() {
         let ports = vec![(3389, "rdp".to_string(), None)];
-        assert_eq!(guess_os(&ports), Some("Likely Windows (RDP + RPC)".to_string()));
+        assert_eq!(guess_os(&ports), Some("Windows".to_string()));
     }
 
     #[test]

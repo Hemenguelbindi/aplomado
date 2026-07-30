@@ -17,6 +17,8 @@ aplomado-types = { workspace = true }
 rusqlite = { version = "0.32", features = ["bundled"], optional = true }
 zip = { version = "2", optional = true }
 
+
+
 # Server-only (not compiled for WASM)
 tokio = { version = "1", features = ["net", "time", "rt", "rt-multi-thread", "macros", "sync", "process"], optional = true }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], optional = true, default-features = false }
@@ -34,3 +36,6 @@ fingerprint = ["scanner", "reqwest", "rustls", "tokio-rustls", "webpki-roots", "
 cve-client = ["reqwest", "chrono", "database"]
 database = ["rusqlite"]
 export = ["zip"]
+
+[dev-dependencies]
+tokio = "1"

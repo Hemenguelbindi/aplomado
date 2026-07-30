@@ -24,7 +24,7 @@ pub struct ScanPolicy {
 impl Default for ScanPolicy {
     fn default() -> Self {
         Self {
-            allow_loopback: false,
+            allow_loopback: true,
             allow_link_local: false,
             allow_multicast: false,
             allow_broadcast: false,
@@ -96,15 +96,15 @@ mod tests {
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
     #[test]
-    fn default_policy_blocks_loopback_v4() {
+    fn default_policy_allows_loopback_v4() {
         let policy = ScanPolicy::default();
-        assert!(!policy.is_allowed(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))));
+        assert!(policy.is_allowed(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))));
     }
 
     #[test]
-    fn default_policy_blocks_loopback_v6() {
+    fn default_policy_allows_loopback_v6() {
         let policy = ScanPolicy::default();
-        assert!(!policy.is_allowed(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1))));
+        assert!(policy.is_allowed(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1))));
     }
 
     #[test]
@@ -144,7 +144,11 @@ mod tests {
 
     #[test]
     fn filter_removes_blocked() {
-        let policy = ScanPolicy::default();
+        let policy = ScanPolicy {
+            allow_loopback: false,
+            allow_multicast: false,
+            ..Default::default()
+        };
         let ips = vec![
             IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
             IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
@@ -152,6 +156,7 @@ mod tests {
             IpAddr::V4(Ipv4Addr::new(224, 0, 0, 1)),
         ];
         let allowed = policy.filter(ips);
+        // 10.0.0.1 and 192.168.1.1 pass; 127.0.0.1 and 224.0.0.1 blocked
         assert_eq!(allowed.len(), 2);
         assert_eq!(allowed[0].to_string(), "10.0.0.1");
         assert_eq!(allowed[1].to_string(), "192.168.1.1");
