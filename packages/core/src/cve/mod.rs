@@ -3,6 +3,9 @@ pub mod database;
 pub mod matcher;
 
 #[cfg(feature = "cve-client")]
+pub mod sources;
+
+#[cfg(feature = "cve-client")]
 pub mod update;
 
 pub use database::{CveDatabase, CveEntry, CveSeverity, VersionRange, VulnerabilityFix};
@@ -36,12 +39,12 @@ pub fn init_cve_on_startup() {
             if let Some(rt) = rt {
                 rt.block_on(async {
                     match crate::cve::update::update_cve_from_sources(&path).await {
-                        Ok(db) => {
-                            // После обновления перезагрузить в глобальный кеш
+                        Ok(entries) => {
+                            let count = entries.len();
                             init_cve_db(&path);
                             eprintln!(
-                                "[aplomado] CVE database updated: {} entries",
-                                db.total_count
+                                "[aplomado] CVE database updated: {} deduplicated entries",
+                                count
                             );
                         }
                         Err(e) => eprintln!("[aplomado] CVE update failed: {e}"),
@@ -59,13 +62,14 @@ pub async fn update_cve_if_stale() -> u32 {
     {
         let path = cve_db_path();
         match crate::cve::update::update_cve_from_sources(&path).await {
-            Ok(db) => {
+            Ok(entries) => {
+                let count = entries.len();
                 init_cve_db(&path);
                 eprintln!(
-                    "[aplomado] CVE database updated: {} entries",
-                    db.total_count
+                    "[aplomado] CVE database updated: {} deduplicated entries",
+                    count
                 );
-                db.total_count
+                count as u32
             }
             Err(e) => {
                 eprintln!("[aplomado] CVE update failed: {e}");
