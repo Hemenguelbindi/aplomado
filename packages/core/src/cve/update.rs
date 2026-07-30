@@ -54,15 +54,20 @@ pub async fn update_cve_from_sources(path: &std::path::Path) -> Result<Vec<RawCv
     }).collect())
 }
 
-// ─── CIRCL source ──────────────────────────────────────────────────
+// ─── CIRCL source (parallel) ───────────────────────────────────────
 
 async fn fetch_all_circl(client: &reqwest::Client) -> Vec<RawCveEntry> {
+    let futs: Vec<_> = CPE_MAPPING
+        .iter()
+        .flat_map(|(service, cpes)| {
+            cpes.iter()
+                .map(|cpe| circl_fetch_cpe(client, service, cpe))
+        })
+        .collect();
+    let results = futures::future::join_all(futs).await;
     let mut all = Vec::new();
-    for (service, cpes) in CPE_MAPPING {
-        for cpe in *cpes {
-            let entries = circl_fetch_cpe(client, service, cpe).await;
-            all.extend(entries);
-        }
+    for entries in results {
+        all.extend(entries);
     }
     all
 }
@@ -213,23 +218,35 @@ async fn fetch_all_nvd(client: &reqwest::Client) -> Vec<RawCveEntry> {
     all
 }
 
-// ─── OSV source ────────────────────────────────────────────────────
+// ─── OSV source (parallel) ─────────────────────────────────────────
 
 async fn fetch_all_osv(client: &reqwest::Client) -> Vec<RawCveEntry> {
+    let futs: Vec<_> = CPE_MAPPING
+        .iter()
+        .flat_map(|(service, cpes)| {
+            cpes.iter()
+                .map(|cpe| osv_fetch_with_log(client, service, cpe))
+        })
+        .collect();
+    let results = futures::future::join_all(futs).await;
     let mut all = Vec::new();
-    for (service, cpes) in CPE_MAPPING {
-        for cpe in *cpes {
-            let entries = crate::cve::sources::osv::fetch_cves_for_cpe(client, service, cpe).await;
-            let count = entries.len();
-            all.extend(entries);
-            if count > 0 {
-                eprintln!("[aplomado] OSV: {} CVEs for {} ({})", count, service, cpe);
-            }
-            // Be nice to OSV — no strict rate limit documented, but sleep briefly
-            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-        }
+    for entries in results {
+        all.extend(entries);
     }
     all
+}
+
+async fn osv_fetch_with_log(
+    client: &reqwest::Client,
+    service: &str,
+    cpe: &str,
+) -> Vec<RawCveEntry> {
+    let entries = crate::cve::sources::osv::fetch_cves_for_cpe(client, service, cpe).await;
+    let count = entries.len();
+    if count > 0 {
+        eprintln!("[aplomado] OSV: {} CVEs for {} ({})", count, service, cpe);
+    }
+    entries
 }
 
 // ─── CIRCL API 5.0 deserialization ─────────────────────────────────

@@ -1,16 +1,15 @@
 use crate::cve::database::{CveDatabase, CveEntry, VersionRange};
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
-/// Глобальная CVE база
-static CVE_DB: OnceLock<std::sync::RwLock<CveDatabase>> = OnceLock::new();
+/// Глобальная CVE база (Arc для lock-free read — clone не блокирует writer).
+static CVE_DB: OnceLock<std::sync::RwLock<Arc<CveDatabase>>> = OnceLock::new();
 
 /// Инициализировать глобальную CVE базу из SQLite.
-/// Первый вызов создаёт OnceLock, последующие перезаписывают данные.
+/// Первый вызов создаёт OnceLock, последующие — атомарно заменяют Arc.
 pub fn init_cve_db(path: &std::path::Path) {
-    let db = crate::cve::client::load_cve_db(path);
+    let db = Arc::new(crate::cve::client::load_cve_db(path));
     match CVE_DB.get() {
         Some(lock) => {
-            // Уже инициализировано — обновляем in-place
             if let Ok(mut guard) = lock.write() {
                 *guard = db;
             }
@@ -21,10 +20,10 @@ pub fn init_cve_db(path: &std::path::Path) {
     }
 }
 
-/// Получить чтение из глобальной CVE базы.
-/// Возвращает `None`, если база не инициализирована или лок poisoned.
-pub fn get_cve_db() -> Option<std::sync::RwLockReadGuard<'static, CveDatabase>> {
-    CVE_DB.get().and_then(|db| db.read().ok())
+/// Получить ссылку на глобальную CVE базу.
+/// Возвращает `Arc<CveDatabase>` — clone дешёвый, читатель не блокирует writer.
+pub fn get_cve_db() -> Option<Arc<CveDatabase>> {
+    CVE_DB.get().and_then(|lock| lock.read().ok().map(|guard| Arc::clone(&guard)))
 }
 
 /// Найти CVE для сервиса и версии (из banner).
