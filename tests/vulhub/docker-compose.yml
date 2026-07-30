@@ -1,0 +1,16 @@
+# Test environment for Aplomado vulnerability scanner
+# Spin up vulnerable services to verify CVE detection accuracy
+#
+# Usage:
+#   1. Start services:   docker compose -f tests/vulhub/docker-compose.yml up -d
+#   2. Start server:     cargo run -- serve 8080
+#   3. Open browser:     http://localhost:8080
+#   4. Add target:       127.0.0.1
+#   5. Add ports:        9001,9002
+#   6. Run scan → verify detected CVEs
+#
+# Cleanup: docker compose -f tests/vulhub/docker-compose.yml down -v
+
+include:
+  - cve-2021-41773/docker-compose.yml
+  - cve-2014-0160/docker-compose.yml
