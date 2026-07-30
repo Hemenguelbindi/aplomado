@@ -98,6 +98,7 @@ pub fn merge_all_sources(entries: Vec<RawCveEntry>) -> CveDatabase {
             affected_versions,
             fixed_version: entry.fixed_version,
             advisory_url: entry.advisory_url,
+            source: entry.source.confidence_str().to_string(),
         });
     }
     db.total_count = db.entries.len() as u32;

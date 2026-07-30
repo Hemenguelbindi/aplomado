@@ -59,6 +59,10 @@ pub struct CveEntry {
     pub fixed_version: Option<String>,
     /// URL к информации об уязвимости (например https://httpd.apache.org/security/...)
     pub advisory_url: Option<String>,
+    /// Источник, подтвердивший CVE (osv / nvd / circl / "").
+    /// Используется для динамического confidence при сканировании.
+    #[serde(default)]
+    pub source: String,
 }
 
 /// База CVE (хранится в памяти, загружается из SQLite)
