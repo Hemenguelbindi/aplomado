@@ -11,3 +11,5 @@ UI_ARCHITECTURE.md
 .playwright-mcp/
 screenshots/
 .github/
+.beads/
+docs/
