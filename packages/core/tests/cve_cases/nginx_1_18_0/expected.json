@@ -1,0 +1,32 @@
+{
+  "name": "nginx 1.18.0",
+  "description": "Nginx 1.18.0 on Alpine — baseline CVE detection",
+  "compose": {
+    "services": {
+      "sut": {
+        "image": "nginx:1.18.0-alpine",
+        "ports": ["127.0.0.1:18080:80"]
+      }
+    }
+  },
+  "target": "127.0.0.1",
+  "ports": [18080],
+  "expected_cves": {
+    "18080": [
+      "CVE-2021-23017",
+      "CVE-2018-16845",
+      "CVE-2019-20372",
+      "CVE-2021-3618",
+      "CVE-2020-36309"
+    ]
+  },
+  "forbidden_cves": [],
+  "min_precision": 0.5,
+  "min_recall": 0.4,
+  "ready_condition": {
+    "type": "http",
+    "port": 18080,
+    "path": "/",
+    "expected_status": 200
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "Apache HTTPD 2.4.49",
+  "description": "Apache 2.4.49 — critical path traversal CVE-2021-41773",
+  "compose": {
+    "services": {
+      "sut": {
+        "image": "httpd:2.4.49",
+        "ports": ["127.0.0.1:28080:80"]
+      }
+    }
+  },
+  "target": "127.0.0.1",
+  "ports": [28080],
+  "expected_cves": {
+    "28080": [
+      "CVE-2021-41773",
+      "CVE-2021-39275",
+      "CVE-2020-1927",
+      "CVE-2019-0215",
+      "CVE-2019-0217"
+    ]
+  },
+  "forbidden_cves": [],
+  "min_precision": 0.4,
+  "min_recall": 0.5,
+  "ready_condition": {
+    "type": "http",
+    "port": 28080,
+    "path": "/",
+    "expected_status": 200
+  }
+}

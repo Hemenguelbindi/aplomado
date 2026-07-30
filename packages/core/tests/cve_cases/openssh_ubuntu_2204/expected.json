@@ -1,0 +1,26 @@
+{
+  "name": "OpenSSH on Ubuntu 22.04",
+  "description": "Ubuntu 22.04 ships OpenSSH 8.9p1 — tests backport-aware detection",
+  "compose": {
+    "services": {
+      "sut": {
+        "image": "ubuntu:22.04",
+        "ports": ["127.0.0.1:38022:22"],
+        "command": ["/bin/bash", "-c", "apt-get update && apt-get install -y openssh-server && mkdir /run/sshd && echo 'root:root' | chpasswd && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && /usr/sbin/sshd -D"]
+      }
+    }
+  },
+  "target": "127.0.0.1",
+  "ports": [38022],
+  "expected_cves": {
+    "38022": []
+  },
+  "forbidden_cves": [],
+  "min_precision": 1.0,
+  "min_recall": 1.0,
+  "ready_condition": {
+    "type": "tcp",
+    "port": 38022,
+    "delay_secs": 15
+  }
+}
