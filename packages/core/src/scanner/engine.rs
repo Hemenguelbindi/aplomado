@@ -83,14 +83,23 @@ async fn scan_with_strategy_inner(
                         crate::cve::matcher::match_cves(db, &port_info.service_name, banner);
                     port_info.cves = matched
                         .into_iter()
-                        .map(|c| crate::scanner::model::CveSummary {
-                            id: c.id.clone(),
-                            severity: c.severity.as_str().to_string(),
-                            cvss_score: c.cvss_score,
-                            fixed_version: c.fixed_version.clone(),
-                            advisory_url: c.advisory_url.clone(),
-                            confidence: "medium".into(),
-                            method: "banner".into(),
+                        .map(|c| {
+                            let conf = if c.source == "high" {
+                                "high"
+                            } else if c.source == "medium" {
+                                "medium"
+                            } else {
+                                "low"
+                            };
+                            crate::scanner::model::CveSummary {
+                                id: c.id.clone(),
+                                severity: c.severity.as_str().to_string(),
+                                cvss_score: c.cvss_score,
+                                fixed_version: c.fixed_version.clone(),
+                                advisory_url: c.advisory_url.clone(),
+                                confidence: conf.into(),
+                                method: "banner".into(),
+                            }
                         })
                         .collect();
                 }

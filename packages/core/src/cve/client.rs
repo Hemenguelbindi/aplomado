@@ -179,6 +179,7 @@ fn fixes_to_database(fixes: &[VulnerabilityFix]) -> CveDatabase {
                 affected_versions: vec![range],
                 fixed_version: fix.fixed_version.clone(),
                 advisory_url: fix.advisory_url.clone(),
+                source: String::new(),
             });
         }
     }
