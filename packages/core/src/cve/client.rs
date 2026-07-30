@@ -325,6 +325,8 @@ pub fn get_cpe_for_service(service: &str) -> Vec<&'static str> {
     let svc = match svc.as_str() {
         "http-alt" | "http-proxy" => "http",
         "https-alt" => "https",
+        "imaps" => "imap",
+        "pop3s" => "pop3",
         other => other,
     };
     CPE_MAPPING
