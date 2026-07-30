@@ -40,6 +40,17 @@ fn open_vuln_db(path: &Path) -> Result<rusqlite::Connection, String> {
 
     // WAL mode for concurrent reads during BG update
     conn.execute_batch("PRAGMA journal_mode=WAL;").ok();
+    conn.execute_batch("PRAGMA foreign_keys=OFF;").ok();
+
+    // Migration: add columns if missing (older DB schema)
+    conn.execute_batch(
+        "ALTER TABLE vulnerability_fixes ADD COLUMN start_including INTEGER NOT NULL DEFAULT 1;",
+    )
+    .ok();
+    conn.execute_batch(
+        "ALTER TABLE vulnerability_fixes ADD COLUMN end_including INTEGER NOT NULL DEFAULT 1;",
+    )
+    .ok();
 
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS vulnerability_fixes (
@@ -47,12 +58,13 @@ fn open_vuln_db(path: &Path) -> Result<rusqlite::Connection, String> {
             package_name TEXT NOT NULL,
             affected_version_start TEXT,
             affected_version_end TEXT,
+            start_including INTEGER NOT NULL DEFAULT 1,
+            end_including INTEGER NOT NULL DEFAULT 1,
             fixed_version TEXT,
             advisory_url TEXT,
             severity TEXT NOT NULL,
             cvss_score REAL NOT NULL DEFAULT 0.0,
-            description TEXT NOT NULL DEFAULT '',
-            PRIMARY KEY (cve_id, package_name)
+            description TEXT NOT NULL DEFAULT ''
         );",
     )
     .map_err(|e| e.to_string())?;
@@ -69,6 +81,7 @@ fn load_all_fixes(path: &Path) -> Vec<VulnerabilityFix> {
     };
     let mut stmt = match conn.prepare(
         "SELECT cve_id, package_name, affected_version_start, affected_version_end,
+                start_including, end_including,
                 fixed_version, advisory_url, severity, cvss_score, description
          FROM vulnerability_fixes",
     ) {
@@ -81,11 +94,13 @@ fn load_all_fixes(path: &Path) -> Vec<VulnerabilityFix> {
             package_name: row.get(1)?,
             affected_version_start: row.get(2)?,
             affected_version_end: row.get(3)?,
-            fixed_version: row.get(4)?,
-            advisory_url: row.get(5)?,
-            severity: row.get(6)?,
-            cvss_score: row.get(7)?,
-            description: row.get(8)?,
+            start_including: row.get::<_, i32>(4)? != 0,
+            end_including: row.get::<_, i32>(5)? != 0,
+            fixed_version: row.get(6)?,
+            advisory_url: row.get(7)?,
+            severity: row.get(8)?,
+            cvss_score: row.get(9)?,
+            description: row.get(10)?,
         })
     });
     match fixes {
@@ -103,10 +118,11 @@ fn save_fixes(path: &Path, fixes: &[VulnerabilityFix]) -> Result<(), String> {
 
     let mut stmt = conn
         .prepare(
-            "INSERT OR IGNORE INTO vulnerability_fixes
+            "INSERT INTO vulnerability_fixes
              (cve_id, package_name, affected_version_start, affected_version_end,
+              start_including, end_including,
               fixed_version, advisory_url, severity, cvss_score, description)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
         )
         .map_err(|e| e.to_string())?;
 
@@ -116,6 +132,8 @@ fn save_fixes(path: &Path, fixes: &[VulnerabilityFix]) -> Result<(), String> {
             fix.package_name,
             fix.affected_version_start,
             fix.affected_version_end,
+            fix.start_including as i32,
+            fix.end_including as i32,
             fix.fixed_version,
             fix.advisory_url,
             fix.severity,
@@ -130,67 +148,97 @@ fn save_fixes(path: &Path, fixes: &[VulnerabilityFix]) -> Result<(), String> {
 // ─── Conversion helpers ───────────────────────────────────────────
 
 /// Сконвертировать Vec<VulnerabilityFix> в CveDatabase (in-memory модель).
+/// Группирует строки с одинаковым (cve_id, package_name) в один CveEntry
+/// с множественными VersionRange.
 #[cfg(feature = "database")]
 fn fixes_to_database(fixes: &[VulnerabilityFix]) -> CveDatabase {
-    let mut db = CveDatabase::default();
+    use std::collections::HashMap;
+
+    let mut entries: HashMap<(String, String), CveEntry> = HashMap::new();
+
     for fix in fixes {
+        let key = (fix.cve_id.clone(), fix.package_name.clone());
         let cpes = get_cpe_for_service(&fix.package_name);
-        let affected_versions = vec![VersionRange {
+        let range = VersionRange {
             start: fix.affected_version_start.clone().unwrap_or_default(),
             end: fix.affected_version_end.clone().unwrap_or_default(),
-            start_including: true,
-            end_including: true,
-        }];
-        db.entries.push(CveEntry {
-            id: fix.cve_id.clone(),
-            package_name: fix.package_name.clone(),
-            description: fix.description.clone(),
-            cvss_score: fix.cvss_score,
-            severity: CveSeverity::from_cvss(fix.cvss_score),
-            cpe_match: cpes.iter().map(|s| s.to_string()).collect(),
-            affected_versions,
-            fixed_version: fix.fixed_version.clone(),
-            advisory_url: fix.advisory_url.clone(),
-        });
+            start_including: fix.start_including,
+            end_including: fix.end_including,
+        };
+
+        if let Some(entry) = entries.get_mut(&key) {
+            entry.affected_versions.push(range);
+        } else {
+            entries.insert(key, CveEntry {
+                id: fix.cve_id.clone(),
+                package_name: fix.package_name.clone(),
+                description: fix.description.clone(),
+                cvss_score: fix.cvss_score,
+                severity: CveSeverity::from_cvss(fix.cvss_score),
+                cpe_match: cpes.iter().map(|s| s.to_string()).collect(),
+                affected_versions: vec![range],
+                fixed_version: fix.fixed_version.clone(),
+                advisory_url: fix.advisory_url.clone(),
+            });
+        }
     }
+
+    let mut db = CveDatabase::default();
+    db.entries = entries.into_values().collect();
     db.updated = chrono::Utc::now().to_rfc3339();
     db.total_count = db.entries.len() as u32;
     db
 }
 
 /// Сконвертировать CveDatabase в Vec<VulnerabilityFix> (для SQLite).
+/// Создаёт одну строку на каждый VersionRange, сохраняя start_including/end_including.
 #[cfg(feature = "database")]
 fn database_to_fixes(db: &CveDatabase) -> Vec<VulnerabilityFix> {
-    db.entries
-        .iter()
-        .map(|entry| {
-            let start = entry.affected_versions.first().and_then(|r| {
-                if r.start.is_empty() {
-                    None
-                } else {
-                    Some(r.start.clone())
-                }
-            });
-            let end = entry.affected_versions.first().and_then(|r| {
-                if r.end.is_empty() {
-                    None
-                } else {
-                    Some(r.end.clone())
-                }
-            });
-            VulnerabilityFix {
+    let mut fixes = Vec::new();
+    for entry in &db.entries {
+        if entry.affected_versions.is_empty() {
+            fixes.push(VulnerabilityFix {
                 cve_id: entry.id.clone(),
                 package_name: entry.package_name.clone(),
-                affected_version_start: start,
-                affected_version_end: end,
+                affected_version_start: None,
+                affected_version_end: None,
+                start_including: true,
+                end_including: true,
                 fixed_version: entry.fixed_version.clone(),
                 advisory_url: entry.advisory_url.clone(),
                 severity: entry.severity.as_str().to_string(),
                 cvss_score: entry.cvss_score,
                 description: entry.description.clone(),
+            });
+        } else {
+            for range in &entry.affected_versions {
+                let start = if range.start.is_empty() {
+                    None
+                } else {
+                    Some(range.start.clone())
+                };
+                let end = if range.end.is_empty() {
+                    None
+                } else {
+                    Some(range.end.clone())
+                };
+                fixes.push(VulnerabilityFix {
+                    cve_id: entry.id.clone(),
+                    package_name: entry.package_name.clone(),
+                    affected_version_start: start,
+                    affected_version_end: end,
+                    start_including: range.start_including,
+                    end_including: range.end_including,
+                    fixed_version: entry.fixed_version.clone(),
+                    advisory_url: entry.advisory_url.clone(),
+                    severity: entry.severity.as_str().to_string(),
+                    cvss_score: entry.cvss_score,
+                    description: entry.description.clone(),
+                });
             }
-        })
-        .collect()
+        }
+    }
+    fixes
 }
 
 // ─── CPE mapping (unchanged) ──────────────────────────────────────
@@ -215,8 +263,15 @@ pub const CPE_MAPPING: &[(&str, &[&str])] = &[
             "cpe:2.3:a:microsoft:internet_information_services",
         ],
     ),
-    ("ftp", &["cpe:2.3:a:filezilla:filezilla_ftp_server"]),
-    ("mysql", &["cpe:2.3:a:oracle:mysql"]),
+    (
+        "ftp",
+        &[
+            "cpe:2.3:a:vsftpd:vsftpd",
+            "cpe:2.3:a:proftpd:proftpd",
+            "cpe:2.3:a:pureftpd:pure-ftpd",
+        ],
+    ),
+    ("mysql", &["cpe:2.3:a:oracle:mysql", "cpe:2.3:a:mariadb:mariadb"]),
     ("mssql", &["cpe:2.3:a:microsoft:sql_server"]),
     ("postgresql", &["cpe:2.3:a:postgresql:postgresql"]),
     ("redis", &["cpe:2.3:a:redis:redis"]),
@@ -225,17 +280,27 @@ pub const CPE_MAPPING: &[(&str, &[&str])] = &[
     ("oracle", &["cpe:2.3:a:oracle:oracle_database"]),
     ("smb", &["cpe:2.3:a:microsoft:windows_smb"]),
     ("rdp", &["cpe:2.3:a:microsoft:remote_desktop"]),
-    ("vnc", &["cpe:2.3:a:realvnc:vnc"]),
+    (
+        "vnc",
+        &[
+            "cpe:2.3:a:realvnc:vnc",
+            "cpe:2.3:a:tigervnc:tigervnc",
+            "cpe:2.3:a:tightvnc:tightvnc",
+        ],
+    ),
     ("nfs", &["cpe:2.3:a:linux:nfs-utils"]),
-    ("dns", &["cpe:2.3:a:isc:bind"]),
-    ("telnet", &["cpe:2.3:a:mit:telnet"]),
-    ("netbios", &["cpe:2.3:a:microsoft:netbios"]),
-    ("msrpc", &["cpe:2.3:a:microsoft:rpc"]),
+    ("dns", &["cpe:2.3:a:isc:bind", "cpe:2.3:a:nlnetlabs:unbound"]),
+    ("netbios", &["cpe:2.3:a:samba:samba"]),
     ("imap", &["cpe:2.3:a:cyrus:imap"]),
     ("pop3", &["cpe:2.3:a:cyrus:pop3d"]),
     (
         "smtp",
-        &["cpe:2.3:a:postfix:postfix", "cpe:2.3:a:exim:exim"],
+        &[
+            "cpe:2.3:a:postfix:postfix",
+            "cpe:2.3:a:exim:exim",
+            "cpe:2.3:a:proofpoint:sendmail",
+            "cpe:2.3:a:openbsd:opensmtpd",
+        ],
     ),
     (
         "http-proxy",
