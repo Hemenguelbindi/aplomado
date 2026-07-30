@@ -99,7 +99,17 @@ fn version_in_range(version: &str, range: &VersionRange) -> bool {
 }
 
 fn parse_version(v: &str) -> Option<Vec<u32>> {
-    let parts: Vec<u32> = v.split('.').filter_map(|s| s.parse().ok()).collect();
+    let parts: Vec<u32> = v
+        .split('.')
+        .filter_map(|s| {
+            let num: String = s.chars().take_while(|c| c.is_ascii_digit()).collect();
+            if num.is_empty() {
+                None
+            } else {
+                num.parse().ok()
+            }
+        })
+        .collect();
     if parts.is_empty() {
         None
     } else {
@@ -162,5 +172,8 @@ mod tests {
         assert_eq!(parse_version("1.2.3"), Some(vec![1, 2, 3]));
         assert_eq!(parse_version("1.2"), Some(vec![1, 2]));
         assert_eq!(parse_version("abc"), None);
+        assert_eq!(parse_version("8.9p1"), Some(vec![8, 9]));
+        assert_eq!(parse_version("10.6.0-MariaDB"), Some(vec![10, 6, 0]));
+        assert_eq!(parse_version("3.0.0-beta.1"), Some(vec![3, 0, 0, 1]));
     }
 }

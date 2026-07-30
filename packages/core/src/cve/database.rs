@@ -70,13 +70,15 @@ pub struct CveDatabase {
 }
 
 /// Flat-модель для SQLite таблицы vulnerability_fixes.
-/// Соответствует рекомендации по Knowledge Base.
+/// Каждая строка = один диапазон версий для одной CVE.
 #[derive(Debug, Clone)]
 pub struct VulnerabilityFix {
     pub cve_id: String,
     pub package_name: String,
     pub affected_version_start: Option<String>,
     pub affected_version_end: Option<String>,
+    pub start_including: bool,
+    pub end_including: bool,
     pub fixed_version: Option<String>,
     pub advisory_url: Option<String>,
     pub severity: String,
