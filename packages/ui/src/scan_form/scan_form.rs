@@ -6,7 +6,7 @@ use super::{
     PortInput, PresetSelector, ScanControls, SessionNameEditor, StatusDisplay, TargetList,
 };
 use crate::components::TextInput;
-use crate::models::ScanPreset;
+use crate::models::{ScanPreset, TargetStatus};
 use dioxus::prelude::*;
 
 fn ports_info(preset: &ScanPreset) -> Option<Element> {
@@ -66,10 +66,44 @@ pub fn ScanForm(props: ScanFormProps) -> Element {
                     p { class: "text-[10px] mt-0.5 text-muted-foreground", "Введите IP-адрес (например, 192.168.1.1), CIDR (10.0.0.0/24) или доменное имя" }
                 }
             }
-            PresetSelector { active: current_preset.clone(), disabled: is_scanning, on_select: move |p| preset.set(p) }
+            PresetSelector { active: current_preset.clone(), disabled: is_scanning, on_select: { let p = props.clone(); move |new_preset: ScanPreset| {
+                preset.set(new_preset.clone());
+                // Propagate the new preset to all queued (not-yet-started) targets,
+                // so "Запустить все цели" scans with the currently-selected ports.
+                let mut s = p.session.clone();
+                let mut changed = false;
+                for t in s.targets.iter_mut() {
+                    if matches!(t.status, TargetStatus::Queued) {
+                        t.preset = new_preset.clone();
+                        t.custom_ports = if matches!(new_preset, ScanPreset::Custom) {
+                            custom_ports()
+                        } else {
+                            vec![]
+                        };
+                        changed = true;
+                    }
+                }
+                if changed { p.on_update_session.call(s); }
+            }} }
             if matches!(current_preset, ScanPreset::Custom) {
                 PortInput { value: custom_ports_str(), disabled: is_scanning,
-                    on_input: move |raw: String| { custom_ports.set(parse_custom_ports(&raw)); custom_ports_str.set(raw); },
+                    on_input: { let p = props.clone(); move |raw: String| {
+                        let parsed = parse_custom_ports(&raw);
+                        custom_ports.set(parsed.clone());
+                        custom_ports_str.set(raw);
+                        // Propagate custom ports to all queued Custom targets.
+                        let mut s = p.session.clone();
+                        let mut changed = false;
+                        for t in s.targets.iter_mut() {
+                            if matches!(t.status, TargetStatus::Queued)
+                                && matches!(t.preset, ScanPreset::Custom)
+                            {
+                                t.custom_ports = parsed.clone();
+                                changed = true;
+                            }
+                        }
+                        if changed { p.on_update_session.call(s); }
+                    } },
                 }
             }
             {ports_info}

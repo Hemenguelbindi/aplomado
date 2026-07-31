@@ -56,3 +56,14 @@ pub fn build_scan_config(targets: &[ScanTargetItem]) -> Option<ScanConfigUi> {
         fast_mode: true,
     })
 }
+
+/// True if every target is configured with the same effective port set.
+/// Used to warn the user when targets have divergent port configs before
+/// running "Запустить все цели" (which applies one port list to all targets).
+pub fn targets_have_same_ports(targets: &[ScanTargetItem]) -> bool {
+    let Some(first) = targets.first() else { return true };
+    let base = get_ports_for_target(first);
+    targets
+        .iter()
+        .all(|t| get_ports_for_target(t) == base)
+}
