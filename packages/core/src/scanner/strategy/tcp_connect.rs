@@ -61,9 +61,19 @@ impl ScanStrategy for TcpConnectStrategy {
                     let _permit = sem.acquire().await.ok()?;
                     let state = crate::scanner::port::scan_port(ip, p).await;
                     if state == PortState::Open {
-                        let svc = crate::scanner::port::known_service(p);
+                        let mut svc = crate::scanner::port::known_service(p);
                         let banner =
                             crate::fingerprint::banner::grab_banner(&ip.to_string(), p).await;
+                        // If port was unknown, try to detect service from banner
+                        if svc == "unknown" {
+                            if let Some(ref b) = banner {
+                                if let Some(detected) =
+                                    crate::fingerprint::banner::detect_service_from_banner(b)
+                                {
+                                    svc = detected;
+                                }
+                            }
+                        }
                         let version = banner
                             .as_ref()
                             .and_then(|b| crate::scanner::model::extract_version(svc, b));

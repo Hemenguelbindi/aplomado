@@ -42,15 +42,57 @@ fn open_vuln_db(path: &Path) -> Result<rusqlite::Connection, String> {
     conn.execute_batch("PRAGMA journal_mode=WAL;").ok();
     conn.execute_batch("PRAGMA foreign_keys=OFF;").ok();
 
-    // Migration: add columns if missing (older DB schema)
-    conn.execute_batch(
-        "ALTER TABLE vulnerability_fixes ADD COLUMN start_including INTEGER NOT NULL DEFAULT 1;",
-    )
-    .ok();
-    conn.execute_batch(
-        "ALTER TABLE vulnerability_fixes ADD COLUMN end_including INTEGER NOT NULL DEFAULT 1;",
-    )
-    .ok();
+    // Migration for old schema (v1 had PRIMARY KEY (cve_id, package_name)
+    // and lacked start_including/end_including columns).
+    //
+    // v1 schema with composite PK blocks saving multiple version ranges for the
+    // same CVE. Detect the old schema and recreate the table without the PK.
+    let table_exists: bool = conn
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='vulnerability_fixes'")
+        .and_then(|mut stmt| stmt.query_row([], |_| Ok(())).map(|_| true))
+        .unwrap_or(false);
+
+    if table_exists {
+        // Check if the old schema lacks start_including → needs migration.
+        let table_info: Vec<String> = {
+            let mut stmt = conn
+                .prepare("PRAGMA table_info(vulnerability_fixes)")
+                .map_err(|e| e.to_string())?;
+            let cols = stmt
+                .query_map([], |row| row.get::<_, String>(1))
+                .map_err(|e| e.to_string())?;
+            cols.filter_map(|c| c.ok()).collect()
+        };
+
+        if !table_info.iter().any(|c| c == "start_including") {
+            conn.execute_batch(
+                "BEGIN;
+                 ALTER TABLE vulnerability_fixes RENAME TO vulnerability_fixes_old;
+                 CREATE TABLE vulnerability_fixes (
+                    cve_id TEXT NOT NULL,
+                    package_name TEXT NOT NULL,
+                    affected_version_start TEXT,
+                    affected_version_end TEXT,
+                    start_including INTEGER NOT NULL DEFAULT 1,
+                    end_including INTEGER NOT NULL DEFAULT 1,
+                    fixed_version TEXT,
+                    advisory_url TEXT,
+                    severity TEXT NOT NULL,
+                    cvss_score REAL NOT NULL DEFAULT 0.0,
+                    description TEXT NOT NULL DEFAULT ''
+                 );
+                 INSERT INTO vulnerability_fixes
+                    (cve_id, package_name, affected_version_start, affected_version_end,
+                     fixed_version, advisory_url, severity, cvss_score, description)
+                 SELECT cve_id, package_name, affected_version_start, affected_version_end,
+                        fixed_version, advisory_url, severity, cvss_score, description
+                 FROM vulnerability_fixes_old;
+                 DROP TABLE vulnerability_fixes_old;
+                 COMMIT;",
+            )
+            .map_err(|e| e.to_string())?;
+        }
+    }
 
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS vulnerability_fixes (
@@ -335,4 +377,80 @@ pub fn get_cpe_for_service(service: &str) -> Vec<&'static str> {
         .find(|(name, _)| *name == svc)
         .map(|(_, cpes)| cpes.to_vec())
         .unwrap_or_default()
+}
+
+#[cfg(all(test, feature = "database"))]
+mod tests {
+    use super::*;
+    use crate::cve::database::{CveDatabase, CveEntry, CveSeverity, VersionRange};
+
+    fn sample_db() -> CveDatabase {
+        let mut db = CveDatabase::default();
+        // One CVE with TWO version ranges — must survive SQLite round-trip
+        db.entries.push(CveEntry {
+            id: "CVE-2021-41773".into(),
+            package_name: "http".into(),
+            description: "Path traversal in Apache".into(),
+            cvss_score: 7.5,
+            severity: CveSeverity::High,
+            cpe_match: vec!["cpe:2.3:a:apache:http_server".into()],
+            affected_versions: vec![
+                VersionRange {
+                    start: "2.4.49".into(),
+                    end: "2.4.49".into(),
+                    start_including: true,
+                    end_including: true,
+                },
+                VersionRange {
+                    start: "2.4.50".into(),
+                    end: "2.4.50".into(),
+                    start_including: true,
+                    end_including: true,
+                },
+            ],
+            fixed_version: Some("2.4.51".into()),
+            advisory_url: Some("https://httpd.apache.org/".into()),
+            source: "medium".into(),
+        });
+        db.total_count = 1;
+        db
+    }
+
+    #[test]
+    fn test_save_load_roundtrip_preserves_multiple_ranges() {
+        let dir = std::env::temp_dir().join(format!("aplomado-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("vuln-test.db");
+        let _ = std::fs::remove_file(&path);
+
+        let db = sample_db();
+        save_cve_db(&db, &path).expect("save should succeed");
+
+        let loaded = load_cve_db(&path);
+        assert_eq!(loaded.entries.len(), 1);
+        let entry = &loaded.entries[0];
+        assert_eq!(entry.id, "CVE-2021-41773");
+        assert_eq!(entry.affected_versions.len(), 2, "both ranges must survive");
+        assert_eq!(entry.affected_versions[0].start, "2.4.49");
+        assert_eq!(entry.affected_versions[1].start, "2.4.50");
+        assert_eq!(entry.source, ""); // SQLite doesn't persist source
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_fresh_db_creates_schema() {
+        let dir = std::env::temp_dir().join(format!("aplomado-fresh-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("vuln-fresh.db");
+        let _ = std::fs::remove_file(&path);
+
+        // Fresh DB must create schema without migration errors
+        let db = CveDatabase::default();
+        save_cve_db(&db, &path).expect("save to fresh DB should succeed");
+        let loaded = load_cve_db(&path);
+        assert!(loaded.entries.is_empty());
+
+        let _ = std::fs::remove_file(&path);
+    }
 }

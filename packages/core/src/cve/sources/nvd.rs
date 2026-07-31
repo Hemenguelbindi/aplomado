@@ -31,22 +31,47 @@ pub async fn fetch_cves_for_cpe(
 ) -> Vec<RawCveEntry> {
     let full_cpe = normalize_cpe_for_nvd(cpe);
 
-    let resp = match client
-        .get(NVD_BASE)
-        .query(&[
-            ("cpeName", full_cpe.as_str()),
-            ("resultsPerPage", "200"),
-        ])
-        .send()
-        .await
-    {
-        Ok(r) if r.status().is_success() => r,
-        Ok(r) => {
-            eprintln!("[aplomado] NVD API returned {} for {}", r.status(), cpe);
-            return vec![];
+    // Retry on 429/503 (rate limit / server busy) with exponential backoff.
+    let mut resp = None;
+    for attempt in 0..4 {
+        match client
+            .get(NVD_BASE)
+            .query(&[
+                ("cpeName", full_cpe.as_str()),
+                ("resultsPerPage", "200"),
+            ])
+            .send()
+            .await
+        {
+            Ok(r) if r.status().is_success() => {
+                resp = Some(r);
+                break;
+            }
+            Ok(r) if r.status().as_u16() == 429 || r.status().as_u16() == 503 => {
+                eprintln!(
+                    "[aplomado] NVD rate-limited ({}) for {}, retry {}/3 in {}s",
+                    r.status(),
+                    cpe,
+                    attempt + 1,
+                    5 * (attempt + 1)
+                );
+                tokio::time::sleep(std::time::Duration::from_secs(5 * (attempt + 1))).await;
+            }
+            Ok(r) => {
+                eprintln!("[aplomado] NVD API returned {} for {}", r.status(), cpe);
+                return vec![];
+            }
+            Err(e) => {
+                eprintln!("[aplomado] NVD request failed for {}: {}", cpe, e);
+                return vec![];
+            }
         }
-        Err(e) => {
-            eprintln!("[aplomado] NVD request failed for {}: {}", cpe, e);
+    }
+
+    let resp = match resp {
+        Some(r) => r,
+        None => {
+            eprintln!("[aplomado] NVD gave up after retries for {}", cpe);
             return vec![];
         }
     };

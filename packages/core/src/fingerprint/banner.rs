@@ -34,9 +34,51 @@ pub async fn grab_banner(host: &str, port: u16) -> Option<String> {
         25 => smtp_banner(host).await,
         3306 => mysql_banner(host).await,
         6379 => redis_banner(host).await,
-        _ => generic_banner(host, port).await,
+        // Unknown port: try HTTP first (most common), then generic banner read
+        _ => {
+            let http = http_banner(host, port).await;
+            if http.is_some() {
+                http
+            } else {
+                generic_banner(host, port).await
+            }
+        }
     };
     banner.and_then(|s| sanitize_banner(s.as_bytes(), 1024))
+}
+
+/// Определить имя сервиса по баннеру (для нестандартных портов).
+/// Возвращает `None`, если сервис не удалось определить.
+pub fn detect_service_from_banner(banner: &str) -> Option<&'static str> {
+    let b = banner.to_lowercase();
+    if b.starts_with("server:") || b.contains("http/") {
+        return Some("http");
+    }
+    if b.starts_with("ssh-") {
+        return Some("ssh");
+    }
+    if b.starts_with("220 ") || b.contains("ftp") {
+        return Some("ftp");
+    }
+    if b.starts_with("mysql") {
+        return Some("mysql");
+    }
+    if b.contains("redis") || b.starts_with("+ok") {
+        return Some("redis");
+    }
+    if b.starts_with("+ok") {
+        return Some("smtp");
+    }
+    if b.contains("postgresql") {
+        return Some("postgresql");
+    }
+    if b.contains("microsoft") && b.contains("iis") {
+        return Some("http");
+    }
+    if b.contains("apache") || b.contains("nginx") || b.contains("tomcat") {
+        return Some("http");
+    }
+    None
 }
 
 async fn connect(host: &str, port: u16) -> Option<TcpStream> {
@@ -192,3 +234,42 @@ async fn generic_banner(host: &str, port: u16) -> Option<String> {
 }
 
 // SkipVerifier removed — now using standard `webpki_roots` TLS verification.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_detect_service_http_server_header() {
+        assert_eq!(
+            detect_service_from_banner("Server: Apache/2.4.49 (Debian)"),
+            Some("http")
+        );
+        assert_eq!(
+            detect_service_from_banner("Server: nginx/1.18.0"),
+            Some("http")
+        );
+    }
+
+    #[test]
+    fn test_detect_service_http_response() {
+        assert_eq!(
+            detect_service_from_banner("HTTP/1.1 200 OK\r\nServer: Apache"),
+            Some("http")
+        );
+    }
+
+    #[test]
+    fn test_detect_service_ssh() {
+        assert_eq!(
+            detect_service_from_banner("SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.6"),
+            Some("ssh")
+        );
+    }
+
+    #[test]
+    fn test_detect_service_unknown() {
+        assert_eq!(detect_service_from_banner("some random data"), None);
+        assert_eq!(detect_service_from_banner(""), None);
+    }
+}

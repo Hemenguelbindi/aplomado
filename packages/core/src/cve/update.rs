@@ -77,101 +77,114 @@ async fn circl_fetch_cpe(
     service: &str,
     cpe: &str,
 ) -> Vec<RawCveEntry> {
-    let url = format!("https://cve.circl.lu/api/vulnerability/cpesearch/{}", cpe);
-    let resp = match client.get(&url).send().await {
-        Ok(r) if r.status().is_success() => r,
-        Ok(r) => {
-            eprintln!("[aplomado] CIRCL returned {} for {}", r.status(), cpe);
-            return vec![];
-        }
-        Err(e) => {
-            eprintln!("[aplomado] CIRCL request failed for {}: {}", cpe, e);
-            return vec![];
-        }
-    };
+    let mut entries = Vec::new();
+    // CIRCL cpesearch paginates by `page` (default 30/page). Fetch until empty.
+    for page in 1..=50 {
+        let url = format!(
+            "https://cve.circl.lu/api/vulnerability/cpesearch/{}?page={}",
+            cpe, page
+        );
+        let resp = match client.get(&url).send().await {
+            Ok(r) if r.status().is_success() => r,
+            Ok(r) => {
+                eprintln!("[aplomado] CIRCL returned {} for {} (page {})", r.status(), cpe, page);
+                break;
+            }
+            Err(e) => {
+                eprintln!("[aplomado] CIRCL request failed for {} (page {}): {}", cpe, page, e);
+                break;
+            }
+        };
 
-    let body_text = resp.text().await.unwrap_or_default();
-    let circl: CirclResponse = match serde_json::from_str(&body_text) {
-        Ok(b) => b,
-        Err(e) => {
-            let preview: String = body_text.chars().take(200).collect();
-            eprintln!(
-                "[aplomado] CIRCL parse failed for {}: {} — preview: {:?}",
-                cpe, e, preview
-            );
-            return vec![];
-        }
-    };
+        let body_text = resp.text().await.unwrap_or_default();
+        let circl: CirclResponse = match serde_json::from_str(&body_text) {
+            Ok(b) => b,
+            Err(e) => {
+                let preview: String = body_text.chars().take(200).collect();
+                eprintln!(
+                    "[aplomado] CIRCL parse failed for {} (page {}): {} — preview: {:?}",
+                    cpe, page, e, preview
+                );
+                break;
+            }
+        };
 
-    let count = circl.cvelistv5.len();
-    let mut entries = Vec::with_capacity(count);
-    for record in &circl.cvelistv5 {
-        let meta = &record.cveMetadata;
-        let cve_id = meta.cveId.as_str();
-        let cna = &record.containers.cna;
+        let count = circl.cvelistv5.len();
+        for record in &circl.cvelistv5 {
+            let meta = &record.cveMetadata;
+            let cve_id = meta.cveId.as_str();
+            let cna = &record.containers.cna;
 
-        let description = cna
-            .descriptions
-            .iter()
-            .find(|d| d.lang == "en")
-            .map(|d| d.value.as_str())
-            .unwrap_or("")
-            .to_string();
+            let description = cna
+                .descriptions
+                .iter()
+                .find(|d| d.lang == "en")
+                .map(|d| d.value.as_str())
+                .unwrap_or("")
+                .to_string();
 
-        let cvss_score = circl_extract_cvss(&record.containers);
-        let advisory_url = cna.references.first().map(|r| r.url.clone());
+            let cvss_score = circl_extract_cvss(&record.containers);
+            let advisory_url = cna.references.first().map(|r| r.url.clone());
 
-        let mut ranges = Vec::new();
-        for affected in &cna.affected {
-            for v in &affected.versions {
-                let (start, start_including) = if v.version.is_empty() || v.version == "*" {
-                    (None, true)
-                } else {
-                    (Some(v.version.clone()), true)
-                };
-
-                let (end, end_including) =
-                    if !v.lessThanOrEqual.is_empty() && v.lessThanOrEqual != "*" {
-                        (Some(v.lessThanOrEqual.clone()), true)
-                    } else if !v.lessThan.is_empty() && v.lessThan != "*" {
-                        (Some(v.lessThan.clone()), false)
-                    } else {
+            let mut ranges = Vec::new();
+            for affected in &cna.affected {
+                for v in &affected.versions {
+                    let (start, start_including) = if v.version.is_empty() || v.version == "*" {
                         (None, true)
+                    } else {
+                        (Some(v.version.clone()), true)
                     };
 
+                    let (end, end_including) =
+                        if !v.lessThanOrEqual.is_empty() && v.lessThanOrEqual != "*" {
+                            (Some(v.lessThanOrEqual.clone()), true)
+                        } else if !v.lessThan.is_empty() && v.lessThan != "*" {
+                            (Some(v.lessThan.clone()), false)
+                        } else {
+                            (None, true)
+                        };
+
+                    ranges.push(RawVersionRange {
+                        start,
+                        end,
+                        start_including,
+                        end_including,
+                    });
+                }
+            }
+
+            if ranges.is_empty() {
                 ranges.push(RawVersionRange {
-                    start,
-                    end,
-                    start_including,
-                    end_including,
+                    start: None,
+                    end: None,
+                    start_including: true,
+                    end_including: true,
                 });
             }
-        }
 
-        if ranges.is_empty() {
-            ranges.push(RawVersionRange {
-                start: None,
-                end: None,
-                start_including: true,
-                end_including: true,
+            entries.push(RawCveEntry {
+                source: CveSource::Circl,
+                cve_id: cve_id.to_string(),
+                package_name: service.to_string(),
+                description,
+                cvss_score,
+                affected_versions: ranges,
+                fixed_version: None,
+                advisory_url,
             });
         }
 
-        entries.push(RawCveEntry {
-            source: CveSource::Circl,
-            cve_id: cve_id.to_string(),
-            package_name: service.to_string(),
-            description,
-            cvss_score,
-            affected_versions: ranges,
-            fixed_version: None,
-            advisory_url,
-        });
+        if count > 0 {
+            eprintln!(
+                "[aplomado] CIRCL: {} CVEs for {} ({}) on page {}",
+                count, service, cpe, page
+            );
+        }
+        if count < 30 {
+            break;
+        }
     }
 
-    if count > 0 {
-        eprintln!("[aplomado] CIRCL: {} CVEs for {} ({})", count, service, cpe);
-    }
     entries
 }
 
@@ -199,21 +212,46 @@ fn find_any_cvss(metrics: &[CirclMetric]) -> Option<f32> {
     None
 }
 
-// ─── NVD source (rate-limited) ─────────────────────────────────────
+// ─── NVD source (rate-limited, deduplicated) ───────────────────────
+
+/// Build a unique CPE list, mapping each CPE to the services that use it.
+fn unique_cpes() -> Vec<(&'static str, Vec<&'static str>)> {
+    let mut map: std::collections::HashMap<&'static str, Vec<&'static str>> =
+        std::collections::HashMap::new();
+    for (service, cpes) in CPE_MAPPING {
+        for cpe in *cpes {
+            map.entry(cpe).or_default().push(service);
+        }
+    }
+    let mut list: Vec<_> = map.into_iter().collect();
+    list.sort_by_key(|(cpe, _)| *cpe);
+    list
+}
 
 async fn fetch_all_nvd(client: &reqwest::Client) -> Vec<RawCveEntry> {
     let mut all = Vec::new();
-    for (service, cpes) in CPE_MAPPING {
-        for cpe in *cpes {
-            let entries = crate::cve::sources::nvd::fetch_cves_for_cpe(client, service, cpe).await;
-            let count = entries.len();
-            all.extend(entries);
-            if count > 0 {
-                eprintln!("[aplomado] NVD: {} CVEs for {} ({})", count, service, cpe);
+    for (cpe, services) in unique_cpes() {
+        // Fetch once per unique CPE
+        let entries = crate::cve::sources::nvd::fetch_cves_for_cpe(client, services[0], cpe).await;
+        let count = entries.len();
+        // Replicate the CVE entries for every service that maps to this CPE
+        for svc in &services {
+            let mut svc_entries = entries.clone();
+            for e in &mut svc_entries {
+                e.package_name = svc.to_string();
             }
-            // Rate limit: 5 req / 30s free tier → 6s between requests
-            tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+            all.extend(svc_entries);
         }
+        if count > 0 {
+            eprintln!(
+                "[aplomado] NVD: {} CVEs for {} ({})",
+                count,
+                services.join("/"),
+                cpe
+            );
+        }
+        // Rate limit: 5 req / 30s free tier → 6s between requests
+        tokio::time::sleep(std::time::Duration::from_secs(6)).await;
     }
     all
 }

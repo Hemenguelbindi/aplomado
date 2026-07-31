@@ -23,10 +23,13 @@ pub async fn fetch_cves_for_cpe(
         return vec![];
     }
 
+    // OSV query requires a `version` field. `*` returns all vulns for the package
+    // (we don't have a concrete version during the bulk update phase).
     let body = serde_json::json!({
         "package": {
             "name": package_name
-        }
+        },
+        "version": "*"
     });
 
     let resp = match client.post(OSV_QUERY).json(&body).send().await {
